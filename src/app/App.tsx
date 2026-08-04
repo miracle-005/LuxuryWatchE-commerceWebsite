@@ -780,7 +780,7 @@ function Footer({ onNavigate }: { onNavigate: (page: Page) => void }) {
 
 // ─── Home Page ────────────────────────────────────────────────────────────────
 
-function HomePage({ onNavigate, onAddToCart, onToggleWishlist, wishlist, banners, featuredIds, newArrivalIds }: {
+function HomePage({ onNavigate, onAddToCart, onToggleWishlist, wishlist, banners, featuredIds, newArrivalIds, products }: {
   onNavigate: (page: Page, id?: number) => void;
   onAddToCart: (p: Product) => void;
   onToggleWishlist: (p: Product) => void;
@@ -788,6 +788,7 @@ function HomePage({ onNavigate, onAddToCart, onToggleWishlist, wishlist, banners
   banners: Banner[];
   featuredIds: number[];
   newArrivalIds: number[];
+  products: Product[];
 }) {
   const [emailInput, setEmailInput] = useState("");
   const [subscribed, setSubscribed] = useState(false);
@@ -802,21 +803,23 @@ function HomePage({ onNavigate, onAddToCart, onToggleWishlist, wishlist, banners
     const t = setInterval(() => setHeroIndex(i => (i + 1) % activeSlides.length), 5000);
     return () => clearInterval(t);
   }, [activeSlides.length]);
-  const featured = PRODUCTS.filter((p) => featuredIds.includes(p.id)).slice(0, 4);
-  const bestsellers = PRODUCTS.filter((p) => p.isBestSeller).slice(0, 4);
-  const newArrivals = PRODUCTS.filter((p) => newArrivalIds.includes(p.id)).slice(0, 4);
+  const featured = products.filter((p) => featuredIds.includes(p.id)).slice(0, 4);
+  const bestsellers = products.filter((p) => p.isBestSeller).slice(0, 4);
+  const newArrivals = products.filter((p) => newArrivalIds.includes(p.id)).slice(0, 4);
 
   return (
     <div>
       {/* Hero Slider */}
       <section className="relative min-h-[88vh] flex items-center overflow-hidden">
-        {/* Background image with transition */}
-        <img
-          key={slide.id}
-          src={slide.imageUrl}
-          alt={slide.title}
-          className="absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
-        />
+        {/* Background images — crossfade */}
+        {activeSlides.map((s, i) => (
+          <img
+            key={s.id}
+            src={s.imageUrl}
+            alt={s.title}
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${i === heroIndex % activeSlides.length ? "opacity-100" : "opacity-0"}`}
+          />
+        ))}
         <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-transparent" />
 
         {/* Left arrow */}
@@ -1024,11 +1027,12 @@ function HomePage({ onNavigate, onAddToCart, onToggleWishlist, wishlist, banners
 
 // ─── Shop Page ────────────────────────────────────────────────────────────────
 
-function ShopPage({ onNavigate, onAddToCart, onToggleWishlist, wishlist }: {
+function ShopPage({ onNavigate, onAddToCart, onToggleWishlist, wishlist, products }: {
   onNavigate: (page: Page, id?: number) => void;
   onAddToCart: (p: Product) => void;
   onToggleWishlist: (p: Product) => void;
   wishlist: Product[];
+  products: Product[];
 }) {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -1039,9 +1043,9 @@ function ShopPage({ onNavigate, onAddToCart, onToggleWishlist, wishlist }: {
   const [filterOpen, setFilterOpen] = useState(false);
 
   const categories = ["All", "Luxury", "Sports", "Smart", "Casual"];
-  const brands = ["All", ...Array.from(new Set(PRODUCTS.map((p) => p.brand)))];
+  const brands = ["All", ...Array.from(new Set(products.map((p) => p.brand)))];
 
-  const filtered = PRODUCTS
+  const filtered = products
     .filter((p) =>
       (selectedCategory === "All" || p.category === selectedCategory) &&
       (selectedBrand === "All" || p.brand === selectedBrand) &&
@@ -1109,13 +1113,13 @@ function ShopPage({ onNavigate, onAddToCart, onToggleWishlist, wishlist }: {
 
             <div>
               <label className="text-xs font-mono uppercase tracking-wider text-muted-foreground mb-3 block">
-                Price Range: $0 – ${priceRange[1].toLocaleString()}
+                Price Range: ₦0 – ₦{priceRange[1].toLocaleString()}
               </label>
               <input
                 type="range"
                 min={0}
-                max={10000}
-                step={100}
+                max={100000}
+                step={1000}
                 value={priceRange[1]}
                 onChange={(e) => setPriceRange([0, Number(e.target.value)])}
                 className="w-full accent-primary"
@@ -1176,20 +1180,21 @@ function ShopPage({ onNavigate, onAddToCart, onToggleWishlist, wishlist }: {
 
 // ─── Product Detail Page ──────────────────────────────────────────────────────
 
-function ProductDetailPage({ productId, onNavigate, onAddToCart, onToggleWishlist, wishlist }: {
+function ProductDetailPage({ productId, onNavigate, onAddToCart, onToggleWishlist, wishlist, products }: {
   productId: number;
   onNavigate: (page: Page, id?: number) => void;
   onAddToCart: (p: Product) => void;
   onToggleWishlist: (p: Product) => void;
   wishlist: Product[];
+  products: Product[];
 }) {
-  const product = PRODUCTS.find((p) => p.id === productId) || PRODUCTS[0];
+  const product = products.find((p) => p.id === productId) || products[0];
   const [activeImage, setActiveImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [selectedColor, setSelectedColor] = useState(product.colors[0]);
   const [activeTab, setActiveTab] = useState<"description" | "specs" | "reviews">("description");
   const [added, setAdded] = useState(false);
-  const related = PRODUCTS.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4);
+  const related = products.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4);
 
   const handleAddToCart = () => {
     for (let i = 0; i < quantity; i++) onAddToCart(product);
@@ -1376,13 +1381,15 @@ function ProductDetailPage({ productId, onNavigate, onAddToCart, onToggleWishlis
 
 // ─── New Arrivals Page ────────────────────────────────────────────────────────
 
-function NewArrivalsPage({ onNavigate, onAddToCart, onToggleWishlist, wishlist }: {
+function NewArrivalsPage({ onNavigate, onAddToCart, onToggleWishlist, wishlist, products, newArrivalIds }: {
   onNavigate: (page: Page, id?: number) => void;
   onAddToCart: (p: Product) => void;
   onToggleWishlist: (p: Product) => void;
   wishlist: Product[];
+  products: Product[];
+  newArrivalIds: number[];
 }) {
-  const newProducts = PRODUCTS.filter((p) => p.isNew);
+  const newProducts = products.filter((p) => newArrivalIds.includes(p.id));
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
       <div className="relative rounded-sm overflow-hidden mb-16">
@@ -1917,10 +1924,13 @@ interface ProductFormData {
   stock: string;
   rating: string;
   imageUrl: string;
+  imageUrls: string[];
   description: string;
   isNew: boolean;
   isBestSeller: boolean;
   isFeatured: boolean;
+  specs: { key: string; value: string }[];
+  colors: { label: string; hex: string }[];
 }
 
 type ContentSection = "banners" | "featured" | "arrivals" | "campaigns" | null;
@@ -1947,14 +1957,15 @@ interface Campaign {
 
 const EMPTY_FORM: ProductFormData = {
   name: "", brand: "", category: "Luxury", price: "", originalPrice: "",
-  stock: "", rating: "", imageUrl: "", description: "",
+  stock: "", rating: "", imageUrl: "", imageUrls: [], description: "",
   isNew: false, isBestSeller: false, isFeatured: false,
+  specs: [{ key: "", value: "" }],
+  colors: [{ label: "", hex: "#000000" }],
 };
 
-function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newArrivalIds, setNewArrivalIds }: { banners: Banner[]; setBanners: React.Dispatch<React.SetStateAction<Banner[]>>; featuredIds: number[]; setFeaturedIds: React.Dispatch<React.SetStateAction<number[]>>; newArrivalIds: number[]; setNewArrivalIds: React.Dispatch<React.SetStateAction<number[]>> }) {
+function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newArrivalIds, setNewArrivalIds, products, setProducts }: { banners: Banner[]; setBanners: React.Dispatch<React.SetStateAction<Banner[]>>; featuredIds: number[]; setFeaturedIds: React.Dispatch<React.SetStateAction<number[]>>; newArrivalIds: number[]; setNewArrivalIds: React.Dispatch<React.SetStateAction<number[]>>; products: Product[]; setProducts: React.Dispatch<React.SetStateAction<Product[]>> }) {
   const [activeTab, setActiveTab] = useState<AdminTab>("overview");
   const [orders, setOrders] = useState<Order[]>(ORDERS);
-  const [products, setProducts] = useState<Product[]>(PRODUCTS);
   const [customers, setCustomers] = useState<typeof CUSTOMERS>(CUSTOMERS);
 
   // Product modal state
@@ -1962,6 +1973,7 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
   const [editingProductId, setEditingProductId] = useState<number | null>(null);
   const [productForm, setProductForm] = useState<ProductFormData>(EMPTY_FORM);
   const [imagePreview, setImagePreview] = useState("");
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [productSaved, setProductSaved] = useState(false);
 
   // Content management state
@@ -2001,11 +2013,24 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
   const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
 
   const handleProductImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    setImagePreview(url);
-    setProductForm((f) => ({ ...f, imageUrl: url }));
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    const urls = files.map(f => URL.createObjectURL(f));
+    setImagePreviews(prev => {
+      const next = [...prev, ...urls];
+      setImagePreview(next[0]);
+      setProductForm(f => ({ ...f, imageUrl: next[0], imageUrls: next }));
+      return next;
+    });
+    e.target.value = "";
+  };
+  const removeProductImage = (idx: number) => {
+    setImagePreviews(prev => {
+      const next = prev.filter((_, i) => i !== idx);
+      setImagePreview(next[0] || "");
+      setProductForm(f => ({ ...f, imageUrl: next[0] || "", imageUrls: next }));
+      return next;
+    });
   };
 
   const handleBannerImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -2019,19 +2044,26 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
     setEditingProductId(null);
     setProductForm(EMPTY_FORM);
     setImagePreview("");
+    setImagePreviews([]);
     setProductModalOpen(true);
   };
 
   const openEditProduct = (p: Product) => {
     setEditingProductId(p.id);
+    const imgs = p.images?.length ? p.images : [p.image];
+    const specEntries = Object.entries(p.specs || {}).map(([key, value]) => ({ key, value }));
+    const colorEntries = (p.colors || []).map(hex => ({ label: "", hex }));
     setProductForm({
       name: p.name, brand: p.brand, category: p.category,
       price: String(p.price), originalPrice: String(p.originalPrice),
       stock: String(p.stock), rating: String(p.rating),
-      imageUrl: p.image, description: p.description,
+      imageUrl: imgs[0], imageUrls: imgs, description: p.description,
       isNew: p.isNew, isBestSeller: p.isBestSeller, isFeatured: p.isFeatured,
+      specs: specEntries.length ? specEntries : [{ key: "", value: "" }],
+      colors: colorEntries.length ? colorEntries : [{ label: "", hex: "#000000" }],
     });
-    setImagePreview(p.image);
+    setImagePreview(imgs[0]);
+    setImagePreviews(imgs);
     setProductModalOpen(true);
   };
 
@@ -2041,6 +2073,11 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
   };
 
   const handleSaveProduct = () => {
+    const fallbackImg = "https://images.unsplash.com/photo-1541778480-fc1752bbc2a9?w=600&h=600&fit=crop";
+    const allImgs = productForm.imageUrls.length ? productForm.imageUrls : (productForm.imageUrl ? [productForm.imageUrl] : [fallbackImg]);
+    const specsObj: Record<string, string> = {};
+    productForm.specs.forEach(({ key, value }) => { if (key.trim()) specsObj[key.trim()] = value.trim(); });
+    const colorsArr = productForm.colors.map(c => c.hex).filter(Boolean);
     const base = {
       name: productForm.name || "Unnamed Watch",
       brand: productForm.brand || "Unknown",
@@ -2049,14 +2086,14 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
       originalPrice: Number(productForm.originalPrice) || Number(productForm.price) || 0,
       stock: Number(productForm.stock) || 0,
       rating: Math.min(5, Math.max(0, Number(productForm.rating) || 4.0)),
-      image: productForm.imageUrl || "https://images.unsplash.com/photo-1541778480-fc1752bbc2a9?w=600&h=600&fit=crop",
-      images: [productForm.imageUrl || "https://images.unsplash.com/photo-1541778480-fc1752bbc2a9?w=600&h=600&fit=crop"],
+      image: allImgs[0],
+      images: allImgs,
       description: productForm.description || "",
       isNew: productForm.isNew,
       isBestSeller: productForm.isBestSeller,
       isFeatured: productForm.isFeatured,
-      colors: ["#1a1a1a", "#c9a050"],
-      specs: { "Movement": "Automatic", "Case Size": "42mm", "Water Resistance": "100m" },
+      colors: colorsArr.length ? colorsArr : ["#1a1a1a"],
+      specs: Object.keys(specsObj).length ? specsObj : { "Movement": "Automatic", "Case Size": "42mm" },
       reviews: 0,
       discount: productForm.originalPrice && productForm.price
         ? Math.round((1 - Number(productForm.price) / Number(productForm.originalPrice)) * 100)
@@ -2289,33 +2326,34 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
                     </button>
                   </div>
                   <div className="p-6 space-y-5">
-                    {/* Product Image — File Upload */}
+                    {/* Product Images — Multi-file Upload */}
                     <div>
-                      <label className="text-xs font-mono uppercase tracking-wider text-muted-foreground mb-1.5 block">Product Image *</label>
-                      <input ref={productFileRef} type="file" accept="image/*" className="hidden" onChange={handleProductImageUpload} />
+                      <label className="text-xs font-mono uppercase tracking-wider text-muted-foreground mb-1.5 block">Product Images * <span className="normal-case text-muted-foreground/60">(select multiple)</span></label>
+                      <input ref={productFileRef} type="file" accept="image/*" multiple className="hidden" onChange={handleProductImageUpload} />
                       <button
                         type="button"
                         onClick={() => productFileRef.current?.click()}
                         className="w-full flex items-center justify-center gap-2.5 px-4 py-3 border-2 border-dashed border-border rounded-sm hover:border-primary hover:bg-primary/5 transition-all text-sm text-muted-foreground hover:text-primary"
                       >
                         <Upload className="w-4 h-4" />
-                        {imagePreview ? "Change Image" : "Choose Image from Files"}
+                        {imagePreviews.length ? `Add More Images (${imagePreviews.length} selected)` : "Choose Images from Files"}
                       </button>
-                      {imagePreview ? (
-                        <div className="mt-2 relative group">
-                          <img src={imagePreview} alt="Product preview" className="w-full h-48 object-cover rounded-sm border border-border bg-secondary" />
-                          <button
-                            type="button"
-                            onClick={() => { setImagePreview(""); setProductForm(f => ({ ...f, imageUrl: "" })); }}
-                            className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
+                      {imagePreviews.length > 0 ? (
+                        <div className="mt-2 grid grid-cols-3 gap-2">
+                          {imagePreviews.map((url, idx) => (
+                            <div key={idx} className="relative group aspect-square">
+                              <img src={url} alt={`Product image ${idx + 1}`} className="w-full h-full object-cover rounded-sm border border-border" />
+                              {idx === 0 && <span className="absolute bottom-1 left-1 text-[9px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded-sm font-mono uppercase">Main</span>}
+                              <button type="button" onClick={() => removeProductImage(idx)} className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
                         </div>
                       ) : (
-                        <div className="mt-2 w-full h-28 bg-muted/40 rounded-sm flex flex-col items-center justify-center text-muted-foreground gap-1.5 border border-border">
-                          <Package className="w-8 h-8 opacity-30" />
-                          <span className="text-xs">No image selected</span>
+                        <div className="mt-2 w-full h-24 bg-muted/40 rounded-sm flex flex-col items-center justify-center text-muted-foreground gap-1.5 border border-border">
+                          <Package className="w-7 h-7 opacity-30" />
+                          <span className="text-xs">No images selected</span>
                         </div>
                       )}
                     </div>
@@ -2363,6 +2401,39 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
                     <div>
                       <label className="text-xs font-mono uppercase tracking-wider text-muted-foreground mb-1.5 block">Description</label>
                       <textarea rows={3} placeholder="Write a compelling product description..." value={productForm.description} onChange={(e) => handleProductFormField("description", e.target.value)} className="w-full px-3 py-2.5 bg-input-background border border-border rounded-sm text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none" />
+                    </div>
+                    {/* Specs */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">Specifications</label>
+                        <button type="button" onClick={() => setProductForm(f => ({ ...f, specs: [...f.specs, { key: "", value: "" }] }))} className="text-xs text-primary hover:underline flex items-center gap-1"><Plus className="w-3 h-3" /> Add Row</button>
+                      </div>
+                      <div className="space-y-2">
+                        {productForm.specs.map((spec, idx) => (
+                          <div key={idx} className="flex gap-2 items-center">
+                            <input type="text" placeholder="e.g. Movement" value={spec.key} onChange={e => setProductForm(f => ({ ...f, specs: f.specs.map((s, i) => i === idx ? { ...s, key: e.target.value } : s) }))} className="flex-1 px-3 py-2 bg-input-background border border-border rounded-sm text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+                            <input type="text" placeholder="e.g. Automatic" value={spec.value} onChange={e => setProductForm(f => ({ ...f, specs: f.specs.map((s, i) => i === idx ? { ...s, value: e.target.value } : s) }))} className="flex-1 px-3 py-2 bg-input-background border border-border rounded-sm text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+                            <button type="button" onClick={() => setProductForm(f => ({ ...f, specs: f.specs.filter((_, i) => i !== idx) }))} className="p-1.5 hover:bg-muted rounded-sm text-muted-foreground hover:text-destructive transition-all"><X className="w-3.5 h-3.5" /></button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Colors / Finishes */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">Color / Finish</label>
+                        <button type="button" onClick={() => setProductForm(f => ({ ...f, colors: [...f.colors, { label: "", hex: "#000000" }] }))} className="text-xs text-primary hover:underline flex items-center gap-1"><Plus className="w-3 h-3" /> Add Color</button>
+                      </div>
+                      <div className="space-y-2">
+                        {productForm.colors.map((color, idx) => (
+                          <div key={idx} className="flex gap-2 items-center">
+                            <input type="color" value={color.hex} onChange={e => setProductForm(f => ({ ...f, colors: f.colors.map((c, i) => i === idx ? { ...c, hex: e.target.value } : c) }))} className="w-10 h-9 rounded-sm border border-border cursor-pointer bg-transparent p-0.5" />
+                            <input type="text" placeholder="e.g. Midnight Black, Rose Gold" value={color.label} onChange={e => setProductForm(f => ({ ...f, colors: f.colors.map((c, i) => i === idx ? { ...c, label: e.target.value } : c) }))} className="flex-1 px-3 py-2 bg-input-background border border-border rounded-sm text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+                            <span className="text-xs font-mono text-muted-foreground w-16">{color.hex}</span>
+                            <button type="button" onClick={() => setProductForm(f => ({ ...f, colors: f.colors.filter((_, i) => i !== idx) }))} className="p-1.5 hover:bg-muted rounded-sm text-muted-foreground hover:text-destructive transition-all"><X className="w-3.5 h-3.5" /></button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                     {/* Flags */}
                     <div className="grid grid-cols-3 gap-3">
@@ -3120,6 +3191,7 @@ export default function App() {
     { id: 1, title: "Time is Art", subtitle: "Discover the world's finest timepieces — from hand-assembled tourbillons to precision sports chronographs. Every watch tells a story worth wearing.", imageUrl: "https://images.unsplash.com/photo-1618215650148-e8e61eae521c?w=1400&h=900&fit=crop&auto=format", ctaText: "Explore Collection", link: "/shop", active: true },
     { id: 2, title: "The Elara Moonphase", subtitle: "Limited edition — only 88 pieces worldwide. Hand-assembled over 400 hours with grand feu enamel dial.", imageUrl: "https://images.unsplash.com/photo-1541778480-fc1752bbc2a9?w=1400&h=900&fit=crop&auto=format", ctaText: "Discover More", link: "/product/11", active: true },
   ]);
+  const [products, setProducts] = useState<Product[]>(PRODUCTS);
   const [featuredIds, setFeaturedIds] = useState<number[]>(PRODUCTS.filter(p => p.isFeatured).map(p => p.id));
   const [newArrivalIds, setNewArrivalIds] = useState<number[]>(PRODUCTS.filter(p => p.isNew).map(p => p.id));
   const [selectedProductId, setSelectedProductId] = useState<number>(1);
@@ -3191,16 +3263,16 @@ export default function App() {
 
         <main>
           {currentPage === "home" && (
-            <HomePage onNavigate={navigate} onAddToCart={addToCart} onToggleWishlist={toggleWishlist} wishlist={wishlist} banners={banners} featuredIds={featuredIds} newArrivalIds={newArrivalIds} />
+            <HomePage onNavigate={navigate} onAddToCart={addToCart} onToggleWishlist={toggleWishlist} wishlist={wishlist} banners={banners} featuredIds={featuredIds} newArrivalIds={newArrivalIds} products={products} />
           )}
           {currentPage === "shop" && (
-            <ShopPage onNavigate={navigate} onAddToCart={addToCart} onToggleWishlist={toggleWishlist} wishlist={wishlist} />
+            <ShopPage onNavigate={navigate} onAddToCart={addToCart} onToggleWishlist={toggleWishlist} wishlist={wishlist} products={products} />
           )}
           {currentPage === "product" && (
-            <ProductDetailPage productId={selectedProductId} onNavigate={navigate} onAddToCart={addToCart} onToggleWishlist={toggleWishlist} wishlist={wishlist} />
+            <ProductDetailPage productId={selectedProductId} onNavigate={navigate} onAddToCart={addToCart} onToggleWishlist={toggleWishlist} wishlist={wishlist} products={products} />
           )}
           {currentPage === "newArrivals" && (
-            <NewArrivalsPage onNavigate={navigate} onAddToCart={addToCart} onToggleWishlist={toggleWishlist} wishlist={wishlist} />
+            <NewArrivalsPage onNavigate={navigate} onAddToCart={addToCart} onToggleWishlist={toggleWishlist} wishlist={wishlist} products={products} newArrivalIds={newArrivalIds} />
           )}
           {currentPage === "cart" && (
             <CartPage cart={cart} onUpdateCart={updateCart} onRemoveFromCart={removeFromCart} onNavigate={navigate} onClearCart={() => setCart([])} />
@@ -3218,7 +3290,7 @@ export default function App() {
             <UserDashboard user={user} wishlist={wishlist} onNavigate={navigate} onToggleWishlist={toggleWishlist} />
           )}
           {currentPage === "admin" && (
-            <AdminDashboard banners={banners} setBanners={setBanners} featuredIds={featuredIds} setFeaturedIds={setFeaturedIds} newArrivalIds={newArrivalIds} setNewArrivalIds={setNewArrivalIds} />
+            <AdminDashboard banners={banners} setBanners={setBanners} featuredIds={featuredIds} setFeaturedIds={setFeaturedIds} newArrivalIds={newArrivalIds} setNewArrivalIds={setNewArrivalIds} products={products} setProducts={setProducts} />
           )}
           {currentPage === "login" && (
             <LoginPage onNavigate={navigate} onLogin={handleLogin} />
