@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, type ElementType, type ReactNode } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo, type ElementType, type ReactNode } from "react";
 import {
   ShoppingCart, Heart, Search, Menu, X, Star, Package, Users,
   DollarSign, TrendingUp, Bell, LogOut, User, Clock, CreditCard,
@@ -1999,6 +1999,45 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
   const pendingOrders = orders.filter((o) => o.status === "Pending").length;
   const completedOrders = orders.filter((o) => o.status === "Delivered").length;
 
+  // Live revenue by month — derived from orders
+  const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const revenueByMonth = useMemo(() => {
+    const map: Record<string, { revenue: number; orders: number }> = {};
+    orders.forEach((o) => {
+      if (o.status === "Cancelled") return;
+      const d = new Date(o.date);
+      const key = MONTH_NAMES[d.getMonth()];
+      if (!map[key]) map[key] = { revenue: 0, orders: 0 };
+      map[key].revenue += o.total;
+      map[key].orders += 1;
+    });
+    // Show all months that appear, sorted chronologically
+    const sorted = Object.entries(map)
+      .sort((a, b) => MONTH_NAMES.indexOf(a[0]) - MONTH_NAMES.indexOf(b[0]))
+      .map(([month, v]) => ({ month, ...v }));
+    return sorted.length ? sorted : [{ month: "—", revenue: 0, orders: 0 }];
+  }, [orders]);
+
+  // Live sales by category — derived from orders × products
+  const CATEGORY_COLORS: Record<string, string> = { Luxury: "#c9a050", Sports: "#8b7355", Smart: "#d4af6e", Casual: "#6b5a40" };
+  const categoryData = useMemo(() => {
+    const map: Record<string, number> = {};
+    orders.forEach((o) => {
+      if (o.status === "Cancelled") return;
+      o.items.forEach((item) => {
+        const prod = products.find((p) => p.name === item.name);
+        const cat = prod?.category || "Other";
+        map[cat] = (map[cat] || 0) + item.price * item.qty;
+      });
+    });
+    const total = Object.values(map).reduce((s, v) => s + v, 0) || 1;
+    return Object.entries(map).map(([name, val]) => ({
+      name,
+      value: Math.round((val / total) * 100),
+      color: CATEGORY_COLORS[name] || "#a08040",
+    }));
+  }, [orders, products]);
+
   const statusColors: Record<string, string> = {
     Pending: "text-status-warning bg-status-warning-bg",
     Processing: "text-status-info bg-status-info-bg",
@@ -2176,7 +2215,7 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
               <div className="lg:col-span-2 bg-card border border-border rounded-sm p-5">
                 <h3 className="font-bold mb-4">Revenue by Month (2026)</h3>
                 <ResponsiveContainer width="100%" height={240}>
-                  <AreaChart data={REVENUE_DATA}>
+                  <AreaChart data={revenueByMonth}>
                     <defs>
                       <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#c9a050" stopOpacity={0.3} />
@@ -2195,8 +2234,8 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
                 <h3 className="font-bold mb-4">Sales by Category</h3>
                 <ResponsiveContainer width="100%" height={180}>
                   <PieChart>
-                    <Pie data={CATEGORY_DATA} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={3} dataKey="value">
-                      {CATEGORY_DATA.map((entry, index) => (
+                    <Pie data={categoryData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={3} dataKey="value">
+                      {categoryData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
@@ -2204,7 +2243,7 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="space-y-2 mt-2">
-                  {CATEGORY_DATA.map((c) => (
+                  {categoryData.map((c) => (
                     <div key={c.name} className="flex items-center justify-between text-xs">
                       <div className="flex items-center gap-2">
                         <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c.color }} />
@@ -2636,7 +2675,6 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
                   { key: "banners" as ContentSection, title: "Homepage Banners", desc: `${banners.length} banners configured`, icon: Layers, count: banners.filter(b => b.active).length + " active" },
                   { key: "featured" as ContentSection, title: "Featured Products", desc: "Curate featured product selection", icon: Award, count: featuredIds.length + " products" },
                   { key: "arrivals" as ContentSection, title: "New Arrivals", desc: "Highlight and schedule new arrivals", icon: Zap, count: newArrivalIds.length + " products" },
-                  { key: "campaigns" as ContentSection, title: "Promotional Campaigns", desc: "Create and manage discount campaigns", icon: Tag, count: campaigns.filter(c => c.active).length + " active" },
                 ].map(({ key, title, desc, icon: Icon, count }) => (
                   <div key={key} className="bg-card border border-border rounded-sm p-6 hover:border-primary/40 transition-all">
                     <div className="flex items-start justify-between mb-4">
@@ -3104,7 +3142,6 @@ function ContactPage() {
             { icon: MapPin, title: "Visit Our Boutique", lines: ["14 Broad Street, Lagos Island", "Lagos, Nigeria"] },
             { icon: Phone, title: "Call Us", lines: ["+234 800 TEMPUS 1", "Mon–Sat, 9am–6pm WAT"] },
             { icon: Mail, title: "Email Us", lines: ["hello@tempuswatches.com", "Response within 24 hours"] },
-            { icon: MessageCircle, title: "Live Chat", lines: ["Available on the website", "Mon–Sat, 9am–9pm WAT"] },
           ].map(({ icon: Icon, title, lines }) => (
             <div key={title} className="flex gap-4 p-5 bg-card border border-border rounded-sm">
               <div className="w-10 h-10 rounded-sm bg-primary/10 flex items-center justify-center shrink-0">
