@@ -780,44 +780,82 @@ function Footer({ onNavigate }: { onNavigate: (page: Page) => void }) {
 
 // ─── Home Page ────────────────────────────────────────────────────────────────
 
-function HomePage({ onNavigate, onAddToCart, onToggleWishlist, wishlist }: {
+function HomePage({ onNavigate, onAddToCart, onToggleWishlist, wishlist, banners, featuredIds, newArrivalIds }: {
   onNavigate: (page: Page, id?: number) => void;
   onAddToCart: (p: Product) => void;
   onToggleWishlist: (p: Product) => void;
   wishlist: Product[];
+  banners: Banner[];
+  featuredIds: number[];
+  newArrivalIds: number[];
 }) {
   const [emailInput, setEmailInput] = useState("");
   const [subscribed, setSubscribed] = useState(false);
   const [activeTestimonial, setActiveTestimonial] = useState(0);
-  const featured = PRODUCTS.filter((p) => p.isFeatured).slice(0, 4);
+  const [heroIndex, setHeroIndex] = useState(0);
+  const activeSlides = banners.filter(b => b.active).length > 0
+    ? banners.filter(b => b.active)
+    : [{ id: 0, title: "Time is Art", subtitle: "Discover the world\'s most extraordinary timepieces — from hand-assembled tourbillons to precision sports chronographs.", imageUrl: "https://images.unsplash.com/photo-1618215650148-e8e61eae521c?w=1400&h=900&fit=crop&auto=format", ctaText: "Explore Collection", link: "shop", active: true }];
+  const slide = activeSlides[heroIndex % activeSlides.length];
+  useEffect(() => {
+    if (activeSlides.length <= 1) return;
+    const t = setInterval(() => setHeroIndex(i => (i + 1) % activeSlides.length), 5000);
+    return () => clearInterval(t);
+  }, [activeSlides.length]);
+  const featured = PRODUCTS.filter((p) => featuredIds.includes(p.id)).slice(0, 4);
   const bestsellers = PRODUCTS.filter((p) => p.isBestSeller).slice(0, 4);
-  const newArrivals = PRODUCTS.filter((p) => p.isNew).slice(0, 4);
+  const newArrivals = PRODUCTS.filter((p) => newArrivalIds.includes(p.id)).slice(0, 4);
 
   return (
     <div>
-      {/* Hero */}
+      {/* Hero Slider */}
       <section className="relative min-h-[88vh] flex items-center overflow-hidden">
+        {/* Background image with transition */}
         <img
-          src="https://images.unsplash.com/photo-1618215650148-e8e61eae521c?w=1400&h=900&fit=crop&auto=format"
-          alt="Luxury watch hero"
-          className="absolute inset-0 w-full h-full object-cover"
+          key={slide.id}
+          src={slide.imageUrl}
+          alt={slide.title}
+          className="absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-transparent" />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+
+        {/* Left arrow */}
+        {activeSlides.length > 1 && (
+          <button
+            onClick={() => setHeroIndex(i => (i - 1 + activeSlides.length) % activeSlides.length)}
+            className="absolute left-4 sm:left-8 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-black/40 border border-white/20 text-white flex items-center justify-center hover:bg-black/70 backdrop-blur-sm transition-all opacity-0 hover:opacity-100"
+            aria-label="Previous slide"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+        )}
+
+        {/* Right arrow */}
+        {activeSlides.length > 1 && (
+          <button
+            onClick={() => setHeroIndex(i => (i + 1) % activeSlides.length)}
+            className="absolute right-4 sm:right-8 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-black/40 border border-white/20 text-white flex items-center justify-center hover:bg-black/70 backdrop-blur-sm transition-all opacity-0 hover:opacity-100"
+            aria-label="Next slide"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        )}
+
+        {/* Content */}
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 w-full">
           <div className="max-w-lg">
-            <p className="text-xs font-mono font-semibold tracking-[0.3em] uppercase text-primary mb-5 text-[#f2f2f2]">
+            <p className="text-xs font-mono font-semibold tracking-[0.3em] uppercase mb-5 text-white/70">
               Authorized Luxury Dealer
             </p>
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-tight mb-6">
-              Time is<br />
-              <span className="text-[#f2f2f2] italic">Art</span>
+              {slide.title}
             </h1>
             <p className="text-lg text-white/70 mb-10 leading-relaxed">
-              Discover the world's most extraordinary timepieces — from hand-assembled tourbillons to precision sports chronographs. Every watch tells a story worth wearing.
+              {slide.subtitle}
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <button onClick={() => onNavigate("shop")} className="flex items-center justify-center gap-2 px-8 py-4 bg-primary text-primary-foreground font-semibold rounded-sm hover:bg-primary/90 transition-all duration-200 hover:gap-3">
-                Explore Collection <ArrowRight className="w-4 h-4" />
+                {slide.ctaText || "Explore Collection"} <ArrowRight className="w-4 h-4" />
               </button>
               <button onClick={() => onNavigate("newArrivals")} className="flex items-center justify-center gap-2 px-8 py-4 bg-white/10 text-white font-semibold rounded-sm border border-white/30 hover:bg-white/20 transition-all duration-200 backdrop-blur-sm">
                 New Arrivals
@@ -833,6 +871,20 @@ function HomePage({ onNavigate, onAddToCart, onToggleWishlist, wishlist }: {
             </div>
           </div>
         </div>
+
+        {/* Dot indicators */}
+        {activeSlides.length > 1 && (
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+            {activeSlides.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setHeroIndex(i)}
+                className={`transition-all duration-300 rounded-full ${i === heroIndex % activeSlides.length ? "w-6 h-2 bg-primary" : "w-2 h-2 bg-white/40 hover:bg-white/70"}`}
+                aria-label={`Go to slide ${i + 1}`}
+              />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Featured Products */}
@@ -1899,7 +1951,7 @@ const EMPTY_FORM: ProductFormData = {
   isNew: false, isBestSeller: false, isFeatured: false,
 };
 
-function AdminDashboard() {
+function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newArrivalIds, setNewArrivalIds }: { banners: Banner[]; setBanners: React.Dispatch<React.SetStateAction<Banner[]>>; featuredIds: number[]; setFeaturedIds: React.Dispatch<React.SetStateAction<number[]>>; newArrivalIds: number[]; setNewArrivalIds: React.Dispatch<React.SetStateAction<number[]>> }) {
   const [activeTab, setActiveTab] = useState<AdminTab>("overview");
   const [orders, setOrders] = useState<Order[]>(ORDERS);
   const [products, setProducts] = useState<Product[]>(PRODUCTS);
@@ -1914,18 +1966,14 @@ function AdminDashboard() {
 
   // Content management state
   const [contentSection, setContentSection] = useState<ContentSection>(null);
-  const [banners, setBanners] = useState<Banner[]>([
-    { id: 1, title: "Time is Art", subtitle: "Discover the world's finest timepieces", imageUrl: "https://images.unsplash.com/photo-1618215650148-e8e61eae521c?w=800&h=400&fit=crop", ctaText: "Explore Collection", link: "/shop", active: true },
-    { id: 2, title: "The Elara Moonphase", subtitle: "Limited edition — only 88 pieces worldwide", imageUrl: "https://images.unsplash.com/photo-1541778480-fc1752bbc2a9?w=800&h=400&fit=crop", ctaText: "Discover More", link: "/product/11", active: true },
-  ]);
+
   const [bannerForm, setBannerForm] = useState<Omit<Banner, "id" | "active">>({ title: "", subtitle: "", imageUrl: "", ctaText: "", link: "" });
   const [campaigns, setCampaigns] = useState<Campaign[]>([
     { id: 1, name: "Summer Luxury Sale", code: "SUMMER20", discount: "20", startDate: "2026-07-01", endDate: "2026-08-31", active: true },
     { id: 2, name: "VIP Members Reward", code: "VIP15", discount: "15", startDate: "2026-06-01", endDate: "2026-12-31", active: true },
   ]);
   const [campaignForm, setCampaignForm] = useState<Omit<Campaign, "id" | "active">>({ name: "", code: "", discount: "", startDate: "", endDate: "" });
-  const [featuredIds, setFeaturedIds] = useState<number[]>(products.filter((p) => p.isFeatured).map((p) => p.id));
-  const [newArrivalIds, setNewArrivalIds] = useState<number[]>(products.filter((p) => p.isNew).map((p) => p.id));
+
   const [contentSaved, setContentSaved] = useState(false);
 
   // Close any open dropdown when clicking outside
@@ -3068,6 +3116,12 @@ function WishlistPage({ wishlist, onNavigate, onToggleWishlist, onAddToCart }: {
 export default function App() {
   const [darkMode, setDarkMode] = useState(true);
   const [currentPage, setCurrentPage] = useState<Page>("home");
+  const [banners, setBanners] = useState<Banner[]>([
+    { id: 1, title: "Time is Art", subtitle: "Discover the world's finest timepieces — from hand-assembled tourbillons to precision sports chronographs. Every watch tells a story worth wearing.", imageUrl: "https://images.unsplash.com/photo-1618215650148-e8e61eae521c?w=1400&h=900&fit=crop&auto=format", ctaText: "Explore Collection", link: "/shop", active: true },
+    { id: 2, title: "The Elara Moonphase", subtitle: "Limited edition — only 88 pieces worldwide. Hand-assembled over 400 hours with grand feu enamel dial.", imageUrl: "https://images.unsplash.com/photo-1541778480-fc1752bbc2a9?w=1400&h=900&fit=crop&auto=format", ctaText: "Discover More", link: "/product/11", active: true },
+  ]);
+  const [featuredIds, setFeaturedIds] = useState<number[]>(PRODUCTS.filter(p => p.isFeatured).map(p => p.id));
+  const [newArrivalIds, setNewArrivalIds] = useState<number[]>(PRODUCTS.filter(p => p.isNew).map(p => p.id));
   const [selectedProductId, setSelectedProductId] = useState<number>(1);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [wishlist, setWishlist] = useState<Product[]>([]);
@@ -3137,7 +3191,7 @@ export default function App() {
 
         <main>
           {currentPage === "home" && (
-            <HomePage onNavigate={navigate} onAddToCart={addToCart} onToggleWishlist={toggleWishlist} wishlist={wishlist} />
+            <HomePage onNavigate={navigate} onAddToCart={addToCart} onToggleWishlist={toggleWishlist} wishlist={wishlist} banners={banners} featuredIds={featuredIds} newArrivalIds={newArrivalIds} />
           )}
           {currentPage === "shop" && (
             <ShopPage onNavigate={navigate} onAddToCart={addToCart} onToggleWishlist={toggleWishlist} wishlist={wishlist} />
@@ -3164,7 +3218,7 @@ export default function App() {
             <UserDashboard user={user} wishlist={wishlist} onNavigate={navigate} onToggleWishlist={toggleWishlist} />
           )}
           {currentPage === "admin" && (
-            <AdminDashboard />
+            <AdminDashboard banners={banners} setBanners={setBanners} featuredIds={featuredIds} setFeaturedIds={setFeaturedIds} newArrivalIds={newArrivalIds} setNewArrivalIds={setNewArrivalIds} />
           )}
           {currentPage === "login" && (
             <LoginPage onNavigate={navigate} onLogin={handleLogin} />
