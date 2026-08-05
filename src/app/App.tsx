@@ -1,14 +1,5 @@
 import { useState, useCallback, useRef, useEffect, useMemo, type ElementType, type ReactNode } from "react";
-import {
-  ShoppingCart, Heart, Search, Menu, X, Star, Package, Users,
-  DollarSign, TrendingUp, Bell, LogOut, User, Clock, CreditCard,
-  MapPin, Phone, Mail, Instagram, Twitter, Facebook, Youtube,
-  Filter, Plus, Minus, Trash2, Check, Download, Truck, BarChart2,
-  ShoppingBag, ArrowRight, ChevronRight, ChevronDown, Sun, Moon,
-  Award, Shield, Zap, Eye, Edit2, Settings, ChevronLeft, Home,
-  Tag, FileText, MessageCircle, HelpCircle, Info, RefreshCw,
-  CheckCircle, XCircle, AlertCircle, Globe, Layers, Upload
-} from "lucide-react";
+import { ShoppingCart, Heart, Search, Menu, X, Star, Package, Users, DollarSign, TrendingUp, Bell, LogOut, User, Clock, CreditCard, MapPin, Phone, Mail, Instagram, Twitter, Facebook, Youtube, ListFilter as Filter, Plus, Minus, Trash2, Check, Download, Truck, ChartBar as BarChart2, ShoppingBag, ArrowRight, ChevronRight, ChevronDown, Sun, Moon, Award, Shield, Zap, Eye, CreditCard as Edit2, Settings, ChevronLeft, Chrome as Home, Tag, FileText, MessageCircle, CircleHelp as HelpCircle, Info, RefreshCw, CircleCheck as CheckCircle, Circle as XCircle, CircleAlert as AlertCircle, Globe, Layers, Upload } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Area, AreaChart
@@ -462,7 +453,7 @@ function GoldDivider() {
 function SectionHeader({ label, title, subtitle }: { label: string; title: string; subtitle?: string }) {
   return (
     <div className="text-center mb-12">
-      <p className="text-xs font-mono font-medium tracking-[0.25em] uppercase text-[#f2f2f2] mb-3">{label}</p>
+      <p className="text-xs font-mono font-medium tracking-[0.25em] uppercase text-primary mb-3">{label}</p>
       <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">{title}</h2>
       {subtitle && <p className="text-muted-foreground max-w-xl mx-auto">{subtitle}</p>}
       <GoldDivider />
@@ -525,7 +516,7 @@ function ProductCard({
           <span className="text-xs text-muted-foreground font-mono">({product.reviews})</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-lg font-bold text-primary font-mono text-[#ffffff]">₦{product.price.toLocaleString()}</span>
+          <span className="text-lg font-bold text-primary font-mono">₦{product.price.toLocaleString()}</span>
           {product.originalPrice > product.price && (
             <span className="text-sm text-muted-foreground line-through font-mono">₦{product.originalPrice.toLocaleString()}</span>
           )}
@@ -942,7 +933,7 @@ function HomePage({ onNavigate, onAddToCart, onToggleWishlist, wishlist, banners
         <img src="https://images.unsplash.com/photo-1541778480-fc1752bbc2a9?w=1400&h=500&fit=crop&auto=format" alt="Luxury watch collection" className="w-full h-72 md:h-96 object-cover" />
         <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
           <div className="text-center">
-            <p className="text-xs font-mono tracking-[0.3em] uppercase text-primary mb-3 text-[#e8e8e8]">Limited Edition Collection</p>
+            <p className="text-xs font-mono tracking-[0.3em] uppercase text-primary mb-3">Limited Edition Collection</p>
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">The Elara Moonphase</h2>
             <p className="text-white/70 mb-6 max-w-md mx-auto">Only 88 pieces in the world. Hand-assembled over 400 hours with grand feu enamel dial.</p>
             <button onClick={() => onNavigate("product", 11)} className="px-8 py-3 bg-primary text-primary-foreground font-semibold rounded-sm hover:bg-primary/90 transition-colors">
