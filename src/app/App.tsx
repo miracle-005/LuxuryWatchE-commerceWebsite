@@ -4,6 +4,16 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Area, AreaChart
 } from "recharts";
+import {
+  fetchProducts, createProduct, updateProduct, deleteProduct,
+  fetchBanners, createBanner, updateBanner, deleteBanner,
+  fetchCampaigns, createCampaign, updateCampaign, deleteCampaign,
+  fetchCart, addToCartDb, updateCartDb, removeFromCartDb, clearCartDb,
+  fetchWishlist, toggleWishlistDb,
+  fetchOrders, placeOrderDb, updateOrderStatusDb,
+  signIn, signUp, signOut, getCurrentUser,
+  type Product as ApiProduct, type Order as ApiOrder, type Banner as ApiBanner, type Campaign as ApiCampaign, type AppUser,
+} from "../lib/api";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -19,7 +29,7 @@ type AccountTab =
   | "profile" | "orders" | "wishlist" | "addresses" | "payments" | "notifications";
 
 interface Product {
-  id: number;
+  id: string;
   name: string;
   brand: string;
   category: string;
@@ -57,7 +67,7 @@ interface Order {
 }
 
 interface Customer {
-  id: number;
+  id: string;
   name: string;
   email: string;
   phone: string;
@@ -68,320 +78,8 @@ interface Customer {
   avatar: string;
 }
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
+// ─── Static Data ────────────────────────────────────────────────────────────────
 
-const PRODUCTS: Product[] = [
-  {
-    id: 1,
-    name: "Noir Eclipse",
-    brand: "Autem",
-    category: "Luxury",
-    price: 4850,
-    originalPrice: 5200,
-    image: "https://images.unsplash.com/photo-1541778480-fc1752bbc2a9?w=600&h=600&fit=crop&auto=format",
-    images: [
-      "https://images.unsplash.com/photo-1541778480-fc1752bbc2a9?w=600&h=600&fit=crop&auto=format",
-      "https://images.unsplash.com/photo-1618215650148-e8e61eae521c?w=600&h=600&fit=crop&auto=format",
-      "https://images.unsplash.com/photo-1773414753637-2738750cfbb6?w=600&h=600&fit=crop&auto=format",
-    ],
-    rating: 4.9,
-    reviews: 124,
-    stock: 6,
-    isNew: false,
-    isBestSeller: true,
-    isFeatured: true,
-    description: "The Noir Eclipse is our most audacious statement in horology. Crafted from grade-5 titanium with a deep black PVD coating, this timepiece exudes understated authority. The in-house movement beats at 28,800 vph with a 72-hour power reserve.",
-    specs: { "Case Material": "Grade-5 Titanium PVD", "Case Size": "42mm", "Movement": "Automatic, In-house", "Water Resistance": "200m", "Power Reserve": "72 hours", "Crystal": "Sapphire AR-coated", "Strap": "Alligator leather" },
-    colors: ["#1a1a1a", "#c9a050"],
-    discount: 7,
-  },
-  {
-    id: 2,
-    name: "Chronos Royale",
-    brand: "Meridian",
-    category: "Luxury",
-    price: 6200,
-    originalPrice: 6200,
-    image: "https://images.unsplash.com/photo-1618215649872-6e3143a716ec?w=600&h=600&fit=crop&auto=format",
-    images: [
-      "https://images.unsplash.com/photo-1618215649872-6e3143a716ec?w=600&h=600&fit=crop&auto=format",
-      "https://images.unsplash.com/photo-1618215650201-8d552591218d?w=600&h=600&fit=crop&auto=format",
-    ],
-    rating: 4.8,
-    reviews: 89,
-    stock: 3,
-    isNew: true,
-    isBestSeller: false,
-    isFeatured: true,
-    description: "The Chronos Royale represents the pinnacle of Swiss watchmaking tradition. Featuring a hand-guilloché dial in champagne gold, this masterpiece is powered by a skeletonized tourbillon movement visible through the exhibition caseback.",
-    specs: { "Case Material": "18K Rose Gold", "Case Size": "40mm", "Movement": "Manual-wind Tourbillon", "Water Resistance": "50m", "Power Reserve": "120 hours", "Crystal": "Sapphire double-sided AR", "Strap": "Ostrich leather" },
-    colors: ["#c9a050", "#f5e6c8"],
-    discount: 0,
-  },
-  {
-    id: 3,
-    name: "Storm Pro X",
-    brand: "Vertex",
-    category: "Sports",
-    price: 1850,
-    originalPrice: 2100,
-    image: "https://images.unsplash.com/photo-1758887952896-8491d393afe2?w=600&h=600&fit=crop&auto=format",
-    images: [
-      "https://images.unsplash.com/photo-1758887952896-8491d393afe2?w=600&h=600&fit=crop&auto=format",
-      "https://images.unsplash.com/photo-1766229967495-001ff77d750b?w=600&h=600&fit=crop&auto=format",
-    ],
-    rating: 4.6,
-    reviews: 312,
-    stock: 24,
-    isNew: false,
-    isBestSeller: true,
-    isFeatured: true,
-    description: "Built for extremes. The Storm Pro X features a helium escape valve, unidirectional rotating bezel, and a proprietary shock-absorbing case construction. Trusted by professional divers and mountaineers worldwide.",
-    specs: { "Case Material": "Stainless Steel 316L", "Case Size": "44mm", "Movement": "Automatic", "Water Resistance": "500m", "Power Reserve": "48 hours", "Crystal": "Sapphire mineral composite", "Strap": "Rubber + steel bracelet" },
-    colors: ["#2d2d2d", "#1a3a5c", "#4a1a1a"],
-    discount: 12,
-  },
-  {
-    id: 4,
-    name: "Nova Smart Elite",
-    brand: "Nexus",
-    category: "Smart",
-    price: 899,
-    originalPrice: 1099,
-    image: "https://images.unsplash.com/photo-1730757679771-b53e798846cf?w=600&h=600&fit=crop&auto=format",
-    images: [
-      "https://images.unsplash.com/photo-1730757679771-b53e798846cf?w=600&h=600&fit=crop&auto=format",
-      "https://images.unsplash.com/photo-1773414753637-2738750cfbb6?w=600&h=600&fit=crop&auto=format",
-    ],
-    rating: 4.4,
-    reviews: 567,
-    stock: 42,
-    isNew: true,
-    isBestSeller: true,
-    isFeatured: false,
-    description: "Where technology meets elegance. The Nova Smart Elite monitors your health metrics, tracks fitness, displays notifications, and makes contactless payments — all wrapped in a premium sapphire glass housing with ceramic bezel.",
-    specs: { "Case Material": "Ceramic + Aluminium", "Case Size": "41mm", "Display": "AMOLED 1.8\"", "Battery": "72 hours", "Water Resistance": "100m", "Sensors": "ECG, SpO2, GPS", "OS": "Proprietary WatchOS" },
-    colors: ["#1a1a1a", "#c0c0c0", "#c9a050"],
-    discount: 18,
-  },
-  {
-    id: 5,
-    name: "Cascade Urban",
-    brand: "Cascade",
-    category: "Casual",
-    price: 395,
-    originalPrice: 395,
-    image: "https://images.unsplash.com/photo-1771734038750-ff6269568e38?w=600&h=600&fit=crop&auto=format",
-    images: [
-      "https://images.unsplash.com/photo-1771734038750-ff6269568e38?w=600&h=600&fit=crop&auto=format",
-      "https://images.unsplash.com/photo-1771734038899-f8c42dbc800f?w=600&h=600&fit=crop&auto=format",
-    ],
-    rating: 4.3,
-    reviews: 203,
-    stock: 55,
-    isNew: false,
-    isBestSeller: false,
-    isFeatured: false,
-    description: "Effortless everyday elegance. The Cascade Urban's minimalist dial paired with interchangeable straps makes it the perfect companion from morning meetings to weekend outings. Powered by a Japanese quartz movement.",
-    specs: { "Case Material": "Stainless Steel", "Case Size": "38mm", "Movement": "Japanese Quartz", "Water Resistance": "50m", "Battery": "3 years", "Crystal": "Mineral glass", "Strap": "Interchangeable leather/nylon" },
-    colors: ["#c0c0c0", "#c9a050", "#8b7355"],
-    discount: 0,
-  },
-  {
-    id: 6,
-    name: "Soleil Rose",
-    brand: "Autem",
-    category: "Luxury",
-    price: 3200,
-    originalPrice: 3600,
-    image: "https://images.unsplash.com/photo-1760532467609-45ed8016f795?w=600&h=600&fit=crop&auto=format",
-    images: [
-      "https://images.unsplash.com/photo-1760532467609-45ed8016f795?w=600&h=600&fit=crop&auto=format",
-      "https://images.unsplash.com/photo-1618215650454-d03cac422c8f?w=600&h=600&fit=crop&auto=format",
-    ],
-    rating: 4.7,
-    reviews: 76,
-    stock: 9,
-    isNew: true,
-    isBestSeller: false,
-    isFeatured: true,
-    description: "The Soleil Rose is femininity distilled into horology. Set with 48 pavé diamonds around the bezel and featuring a mother-of-pearl dial with rose gold indices, this watch is as much jewelry as it is timepiece.",
-    specs: { "Case Material": "18K Rose Gold", "Case Size": "36mm", "Movement": "Automatic", "Water Resistance": "30m", "Diamonds": "0.38ct pavé bezel", "Crystal": "Sapphire AR-coated", "Strap": "Satin with butterfly clasp" },
-    colors: ["#f5c6a0", "#c9a050"],
-    discount: 11,
-  },
-  {
-    id: 7,
-    name: "Titan Storm",
-    brand: "Vertex",
-    category: "Sports",
-    price: 2100,
-    originalPrice: 2100,
-    image: "https://images.unsplash.com/photo-1618215650201-8d552591218d?w=600&h=600&fit=crop&auto=format",
-    images: [
-      "https://images.unsplash.com/photo-1618215650201-8d552591218d?w=600&h=600&fit=crop&auto=format",
-      "https://images.unsplash.com/photo-1662333084914-3eea84762671?w=600&h=600&fit=crop&auto=format",
-    ],
-    rating: 4.5,
-    reviews: 188,
-    stock: 17,
-    isNew: false,
-    isBestSeller: false,
-    isFeatured: false,
-    description: "The Titan Storm is a pilot's companion for the modern era. Featuring a bidirectional slide rule bezel, GMT complication, and a case crafted from aerospace-grade titanium, it combines technical excellence with refined styling.",
-    specs: { "Case Material": "Aerospace Titanium", "Case Size": "43mm", "Movement": "Automatic GMT", "Water Resistance": "200m", "Power Reserve": "60 hours", "Crystal": "Flat sapphire", "Strap": "Titanium bracelet" },
-    colors: ["#808080", "#1a1a1a"],
-    discount: 0,
-  },
-  {
-    id: 8,
-    name: "Apex Smart Pro",
-    brand: "Nexus",
-    category: "Smart",
-    price: 1249,
-    originalPrice: 1499,
-    image: "https://images.unsplash.com/photo-1662333084914-3eea84762671?w=600&h=600&fit=crop&auto=format",
-    images: [
-      "https://images.unsplash.com/photo-1662333084914-3eea84762671?w=600&h=600&fit=crop&auto=format",
-    ],
-    rating: 4.2,
-    reviews: 429,
-    stock: 31,
-    isNew: true,
-    isBestSeller: false,
-    isFeatured: false,
-    description: "The Apex Smart Pro combines premium materials with cutting-edge technology. Featuring a titanium case, always-on display, and a week-long battery life, it sets a new benchmark for luxury smartwatches.",
-    specs: { "Case Material": "Grade 5 Titanium", "Case Size": "45mm", "Display": "LTPO AMOLED", "Battery": "7 days", "Water Resistance": "100m", "Sensors": "ECG, SpO2, EDA, GPS", "Connectivity": "LTE + WiFi" },
-    colors: ["#808080", "#1a1a1a", "#2d4a2d"],
-    discount: 17,
-  },
-  {
-    id: 9,
-    name: "Heritage Bronze",
-    brand: "Meridian",
-    category: "Casual",
-    price: 680,
-    originalPrice: 750,
-    image: "https://images.unsplash.com/photo-1772949399884-01ec45bc5763?w=600&h=600&fit=crop&auto=format",
-    images: [
-      "https://images.unsplash.com/photo-1772949399884-01ec45bc5763?w=600&h=600&fit=crop&auto=format",
-    ],
-    rating: 4.4,
-    reviews: 97,
-    stock: 28,
-    isNew: false,
-    isBestSeller: false,
-    isFeatured: false,
-    description: "A tribute to the golden age of watchmaking, the Heritage Bronze develops a unique patina over time — making every watch one-of-a-kind. Powered by a reliable Swiss automatic movement with a display caseback.",
-    specs: { "Case Material": "CuSn8 Bronze", "Case Size": "40mm", "Movement": "Swiss Automatic", "Water Resistance": "100m", "Power Reserve": "42 hours", "Crystal": "Domed sapphire", "Strap": "Vegetable-tanned leather" },
-    colors: ["#8b6914", "#5a4010"],
-    discount: 9,
-  },
-  {
-    id: 10,
-    name: "Pacific Diver",
-    brand: "Vertex",
-    category: "Sports",
-    price: 1580,
-    originalPrice: 1580,
-    image: "https://images.unsplash.com/photo-1767779228363-21e8816c7147?w=600&h=600&fit=crop&auto=format",
-    images: [
-      "https://images.unsplash.com/photo-1767779228363-21e8816c7147?w=600&h=600&fit=crop&auto=format",
-    ],
-    rating: 4.6,
-    reviews: 241,
-    stock: 19,
-    isNew: false,
-    isBestSeller: true,
-    isFeatured: false,
-    description: "ISO 6425 certified and pressure tested to 1000m, the Pacific Diver is the ultimate tool watch. Anti-magnetic construction, a maxi-luminous dial, and screw-down crown make it the professional diver's first choice.",
-    specs: { "Case Material": "Stainless Steel 316L", "Case Size": "42mm", "Movement": "Automatic", "Water Resistance": "1000m", "Power Reserve": "48 hours", "Crystal": "Sapphire Cyclops", "Certification": "ISO 6425" },
-    colors: ["#1a3a5c", "#2d2d2d", "#2d4a2d"],
-    discount: 0,
-  },
-  {
-    id: 11,
-    name: "Elara Moonphase",
-    brand: "Autem",
-    category: "Luxury",
-    price: 8900,
-    originalPrice: 9500,
-    image: "https://images.unsplash.com/photo-1618215650454-d03cac422c8f?w=600&h=600&fit=crop&auto=format",
-    images: [
-      "https://images.unsplash.com/photo-1618215650454-d03cac422c8f?w=600&h=600&fit=crop&auto=format",
-      "https://images.unsplash.com/photo-1618215650148-e8e61eae521c?w=600&h=600&fit=crop&auto=format",
-    ],
-    rating: 5.0,
-    reviews: 34,
-    stock: 2,
-    isNew: true,
-    isBestSeller: false,
-    isFeatured: true,
-    description: "The Elara Moonphase is a celestial masterpiece. Hand-assembled over 400 hours, its enamel dial depicts a hand-painted astronomical sky. The ultra-precise moonphase complication deviates just one day every 122 years.",
-    specs: { "Case Material": "Platinum 950", "Case Size": "39mm", "Movement": "Manual-wind Grand Complication", "Water Resistance": "30m", "Power Reserve": "96 hours", "Dial": "Grand Feu enamel", "Limited": "Limited Edition of 88" },
-    colors: ["#e8e8e8", "#c9a050"],
-    discount: 6,
-  },
-  {
-    id: 12,
-    name: "Urban Classic",
-    brand: "Cascade",
-    category: "Casual",
-    price: 420,
-    originalPrice: 420,
-    image: "https://images.unsplash.com/photo-1778088651812-636b0780f0dc?w=600&h=600&fit=crop&auto=format",
-    images: [
-      "https://images.unsplash.com/photo-1778088651812-636b0780f0dc?w=600&h=600&fit=crop&auto=format",
-    ],
-    rating: 4.1,
-    reviews: 156,
-    stock: 48,
-    isNew: false,
-    isBestSeller: false,
-    isFeatured: false,
-    description: "Timeless simplicity is the Urban Classic's greatest feature. A clean three-hand layout, polished steel case, and a versatile NATO strap make it the watch that goes with everything — from boardroom to beach.",
-    specs: { "Case Material": "Stainless Steel", "Case Size": "39mm", "Movement": "Japanese Quartz", "Water Resistance": "50m", "Battery": "3 years", "Crystal": "Mineral glass", "Strap": "NATO nylon" },
-    colors: ["#c0c0c0", "#1a1a1a", "#6b4c2a"],
-    discount: 0,
-  },
-];
-
-const ORDERS: Order[] = [
-  { id: "ORD-7841", date: "2026-07-08", status: "Delivered", total: 4850, customer: "James Okafor", email: "james@example.com", address: "14 Victoria Island, Lagos", items: [{ name: "Noir Eclipse", qty: 1, price: 4850 }] },
-  { id: "ORD-7839", date: "2026-07-07", status: "Shipped", total: 7099, customer: "Amara Diallo", email: "amara@example.com", address: "3 Banana Island, Lagos", items: [{ name: "Chronos Royale", qty: 1, price: 6200 }, { name: "Cascade Urban", qty: 1, price: 395 }] },
-  { id: "ORD-7835", date: "2026-07-05", status: "Processing", total: 1850, customer: "Emeka Nwosu", email: "emeka@example.com", address: "7 Maitama, Abuja", items: [{ name: "Storm Pro X", qty: 1, price: 1850 }] },
-  { id: "ORD-7830", date: "2026-07-03", status: "Pending", total: 1798, customer: "Fatima Al-Hassan", email: "fatima@example.com", address: "22 Ikoyi, Lagos", items: [{ name: "Nova Smart Elite", qty: 2, price: 899 }] },
-  { id: "ORD-7821", date: "2026-07-01", status: "Cancelled", total: 8900, customer: "Chidi Obi", email: "chidi@example.com", address: "5 GRA, Port Harcourt", items: [{ name: "Elara Moonphase", qty: 1, price: 8900 }] },
-  { id: "ORD-7815", date: "2026-06-29", status: "Delivered", total: 3200, customer: "Ngozi Adeyemi", email: "ngozi@example.com", address: "9 Lekki Phase 1, Lagos", items: [{ name: "Soleil Rose", qty: 1, price: 3200 }] },
-  { id: "ORD-7810", date: "2026-06-27", status: "Delivered", total: 2100, customer: "Taiwo Bello", email: "taiwo@example.com", address: "17 Wuse, Abuja", items: [{ name: "Titan Storm", qty: 1, price: 2100 }] },
-  { id: "ORD-7805", date: "2026-06-25", status: "Shipped", total: 680, customer: "Adaeze Nkemdirim", email: "adaeze@example.com", address: "11 GRA, Enugu", items: [{ name: "Heritage Bronze", qty: 1, price: 680 }] },
-];
-
-const CUSTOMERS: Customer[] = [
-  { id: 1, name: "James Okafor", email: "james@example.com", phone: "+234 801 234 5678", orders: 7, spent: 24850, joined: "2024-03-15", status: "Active", avatar: "JO" },
-  { id: 2, name: "Amara Diallo", email: "amara@example.com", phone: "+234 802 345 6789", orders: 4, spent: 18200, joined: "2024-06-22", status: "Active", avatar: "AD" },
-  { id: 3, name: "Emeka Nwosu", email: "emeka@example.com", phone: "+234 803 456 7890", orders: 2, spent: 3700, joined: "2025-01-08", status: "Active", avatar: "EN" },
-  { id: 4, name: "Fatima Al-Hassan", email: "fatima@example.com", phone: "+234 804 567 8901", orders: 5, spent: 9450, joined: "2024-11-30", status: "Active", avatar: "FA" },
-  { id: 5, name: "Chidi Obi", email: "chidi@example.com", phone: "+234 805 678 9012", orders: 1, spent: 0, joined: "2025-07-01", status: "Inactive", avatar: "CO" },
-  { id: 6, name: "Ngozi Adeyemi", email: "ngozi@example.com", phone: "+234 806 789 0123", orders: 9, spent: 31500, joined: "2023-08-14", status: "Active", avatar: "NA" },
-];
-
-const REVENUE_DATA = [
-  { month: "Jan", revenue: 42800, orders: 18 },
-  { month: "Feb", revenue: 38500, orders: 15 },
-  { month: "Mar", revenue: 55200, orders: 22 },
-  { month: "Apr", revenue: 61400, orders: 27 },
-  { month: "May", revenue: 47900, orders: 20 },
-  { month: "Jun", revenue: 73100, orders: 31 },
-  { month: "Jul", revenue: 58600, orders: 24 },
-];
-
-const CATEGORY_DATA = [
-  { name: "Luxury", value: 48, color: "#c9a050" },
-  { name: "Sports", value: 26, color: "#8b7355" },
-  { name: "Smart", value: 16, color: "#d4af6e" },
-  { name: "Casual", value: 10, color: "#6b5a40" },
-];
 
 const TESTIMONIALS = [
   { id: 1, name: "James O.", location: "Lagos, Nigeria", rating: 5, text: "The Noir Eclipse exceeded every expectation. The craftsmanship is simply breathtaking — I receive compliments every single day. Tempus delivered it in perfect condition with beautiful packaging.", avatar: "JO" },
@@ -467,7 +165,7 @@ function ProductCard({
   product, onNavigate, onAddToCart, onToggleWishlist, isWishlisted
 }: {
   product: Product;
-  onNavigate: (page: Page, productId?: number) => void;
+  onNavigate: (page: Page, productId?: string) => void;
   onAddToCart: (product: Product) => void;
   onToggleWishlist: (product: Product) => void;
   isWishlisted: boolean;
@@ -772,13 +470,13 @@ function Footer({ onNavigate }: { onNavigate: (page: Page) => void }) {
 // ─── Home Page ────────────────────────────────────────────────────────────────
 
 function HomePage({ onNavigate, onAddToCart, onToggleWishlist, wishlist, banners, featuredIds, newArrivalIds, products }: {
-  onNavigate: (page: Page, id?: number) => void;
+  onNavigate: (page: Page, id?: string) => void;
   onAddToCart: (p: Product) => void;
   onToggleWishlist: (p: Product) => void;
   wishlist: Product[];
   banners: Banner[];
-  featuredIds: number[];
-  newArrivalIds: number[];
+  featuredIds: string[];
+  newArrivalIds: string[];
   products: Product[];
 }) {
   const [emailInput, setEmailInput] = useState("");
@@ -1019,7 +717,7 @@ function HomePage({ onNavigate, onAddToCart, onToggleWishlist, wishlist, banners
 // ─── Shop Page ────────────────────────────────────────────────────────────────
 
 function ShopPage({ onNavigate, onAddToCart, onToggleWishlist, wishlist, products }: {
-  onNavigate: (page: Page, id?: number) => void;
+  onNavigate: (page: Page, id?: string) => void;
   onAddToCart: (p: Product) => void;
   onToggleWishlist: (p: Product) => void;
   wishlist: Product[];
@@ -1172,8 +870,8 @@ function ShopPage({ onNavigate, onAddToCart, onToggleWishlist, wishlist, product
 // ─── Product Detail Page ──────────────────────────────────────────────────────
 
 function ProductDetailPage({ productId, onNavigate, onAddToCart, onToggleWishlist, wishlist, products }: {
-  productId: number;
-  onNavigate: (page: Page, id?: number) => void;
+  productId: string;
+  onNavigate: (page: Page, id?: string) => void;
   onAddToCart: (p: Product) => void;
   onToggleWishlist: (p: Product) => void;
   wishlist: Product[];
@@ -1373,12 +1071,12 @@ function ProductDetailPage({ productId, onNavigate, onAddToCart, onToggleWishlis
 // ─── New Arrivals Page ────────────────────────────────────────────────────────
 
 function NewArrivalsPage({ onNavigate, onAddToCart, onToggleWishlist, wishlist, products, newArrivalIds }: {
-  onNavigate: (page: Page, id?: number) => void;
+  onNavigate: (page: Page, id?: string) => void;
   onAddToCart: (p: Product) => void;
   onToggleWishlist: (p: Product) => void;
   wishlist: Product[];
   products: Product[];
-  newArrivalIds: number[];
+  newArrivalIds: string[];
 }) {
   const newProducts = products.filter((p) => newArrivalIds.includes(p.id));
   return (
@@ -1406,8 +1104,8 @@ function NewArrivalsPage({ onNavigate, onAddToCart, onToggleWishlist, wishlist, 
 
 function CartPage({ cart, onUpdateCart, onRemoveFromCart, onNavigate, onClearCart }: {
   cart: CartItem[];
-  onUpdateCart: (productId: number, qty: number) => void;
-  onRemoveFromCart: (productId: number) => void;
+  onUpdateCart: (productId: string, qty: number) => void;
+  onRemoveFromCart: (productId: string) => void;
   onNavigate: (page: Page) => void;
   onClearCart: () => void;
 }) {
@@ -1520,20 +1218,44 @@ function CartPage({ cart, onUpdateCart, onRemoveFromCart, onNavigate, onClearCar
 
 // ─── Checkout Page ────────────────────────────────────────────────────────────
 
-function CheckoutPage({ cart, onNavigate, onPlaceOrder }: {
+function CheckoutPage({ cart, onNavigate, onPlaceOrder, user }: {
   cart: CartItem[];
   onNavigate: (page: Page) => void;
-  onPlaceOrder: () => void;
+  onPlaceOrder: (info: { name: string; email: string; address: string; paymentMethod: string }) => Promise<void>;
+  user: AppUser | null;
 }) {
   const [paymentMethod, setPaymentMethod] = useState("card");
   const [step, setStep] = useState<"shipping" | "payment">("shipping");
-  const [form, setForm] = useState({ firstName: "", lastName: "", email: "", phone: "", address: "", city: "", state: "", zip: "", country: "Nigeria" });
+  const [form, setForm] = useState({ firstName: user?.name || "", lastName: "", email: user?.email || "", phone: "", address: "", city: "", state: "", zip: "", country: "Nigeria" });
+  const [placing, setPlacing] = useState(false);
+  const [error, setError] = useState("");
   const subtotal = cart.reduce((s, i) => s + i.product.price * i.quantity, 0);
   const tax = subtotal * 0.075;
   const shipping = subtotal > 500 ? 0 : 25;
   const total = subtotal + tax + shipping;
 
   const handleField = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  const handlePlaceOrder = async () => {
+    if (!user) {
+      onNavigate("login");
+      return;
+    }
+    setPlacing(true);
+    setError("");
+    try {
+      await onPlaceOrder({
+        name: `${form.firstName} ${form.lastName}`.trim(),
+        email: form.email,
+        address: `${form.address}, ${form.city}, ${form.state} ${form.zip}, ${form.country}`,
+        paymentMethod,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to place order");
+    } finally {
+      setPlacing(false);
+    }
+  };
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -1617,8 +1339,13 @@ function CheckoutPage({ cart, onNavigate, onPlaceOrder }: {
                 <button onClick={() => setStep("shipping")} className="px-5 py-3.5 border border-border rounded-sm text-sm font-semibold hover:border-primary hover:text-primary transition-all flex items-center gap-2">
                   <ChevronLeft className="w-4 h-4" /> Back
                 </button>
-                <button onClick={onPlaceOrder} className="flex-1 py-3.5 bg-primary text-primary-foreground font-bold rounded-sm hover:bg-primary/90 transition-colors flex items-center justify-center gap-2">
-                  Place Order — ${total.toFixed(2)} <Check className="w-4 h-4" />
+                {error && (
+                  <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-sm text-sm text-destructive">
+                    {error}
+                  </div>
+                )}
+                <button onClick={handlePlaceOrder} disabled={placing} className="flex-1 py-3.5 bg-primary text-primary-foreground font-bold rounded-sm hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
+                  {placing ? "Placing Order..." : `Place Order — ₦${total.toLocaleString()}`} <Check className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -1709,11 +1436,14 @@ function ConfirmationPage({ onNavigate }: { onNavigate: (page: Page) => void }) 
 function UserDashboard({ user, wishlist, onNavigate, onToggleWishlist }: {
   user: { name: string; email: string } | null;
   wishlist: Product[];
-  onNavigate: (page: Page, id?: number) => void;
+  onNavigate: (page: Page, id?: string) => void;
   onToggleWishlist: (p: Product) => void;
 }) {
   const [activeTab, setActiveTab] = useState<AccountTab>("profile");
-  const userOrders = ORDERS.slice(0, 4);
+  const [userOrders, setUserOrders] = useState<Order[]>([]);
+  useEffect(() => {
+    fetchOrders().then(setUserOrders).catch(console.error);
+  }, []);
 
   const tabs: { id: AccountTab; label: string; icon: ElementType }[] = [
     { id: "profile", label: "Profile", icon: User },
@@ -1927,7 +1657,7 @@ interface ProductFormData {
 type ContentSection = "banners" | "featured" | "arrivals" | "campaigns" | null;
 
 interface Banner {
-  id: number;
+  id: string;
   title: string;
   subtitle: string;
   imageUrl: string;
@@ -1937,7 +1667,7 @@ interface Banner {
 }
 
 interface Campaign {
-  id: number;
+  id: string;
   name: string;
   code: string;
   discount: string;
@@ -1954,14 +1684,19 @@ const EMPTY_FORM: ProductFormData = {
   colors: [{ label: "", hex: "#000000" }],
 };
 
-function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newArrivalIds, setNewArrivalIds, products, setProducts }: { banners: Banner[]; setBanners: React.Dispatch<React.SetStateAction<Banner[]>>; featuredIds: number[]; setFeaturedIds: React.Dispatch<React.SetStateAction<number[]>>; newArrivalIds: number[]; setNewArrivalIds: React.Dispatch<React.SetStateAction<number[]>>; products: Product[]; setProducts: React.Dispatch<React.SetStateAction<Product[]>> }) {
+function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newArrivalIds, setNewArrivalIds, products, setProducts }: { banners: Banner[]; setBanners: React.Dispatch<React.SetStateAction<Banner[]>>; featuredIds: string[]; setFeaturedIds: React.Dispatch<React.SetStateAction<string[]>>; newArrivalIds: string[]; setNewArrivalIds: React.Dispatch<React.SetStateAction<string[]>>; products: Product[]; setProducts: React.Dispatch<React.SetStateAction<Product[]>> }) {
   const [activeTab, setActiveTab] = useState<AdminTab>("overview");
-  const [orders, setOrders] = useState<Order[]>(ORDERS);
-  const [customers, setCustomers] = useState<typeof CUSTOMERS>(CUSTOMERS);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+
+  useEffect(() => {
+    fetchOrders().then(setOrders).catch(console.error);
+    fetchCampaigns().then(setCampaigns).catch(console.error);
+  }, []);
 
   // Product modal state
   const [productModalOpen, setProductModalOpen] = useState(false);
-  const [editingProductId, setEditingProductId] = useState<number | null>(null);
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [productForm, setProductForm] = useState<ProductFormData>(EMPTY_FORM);
   const [imagePreview, setImagePreview] = useState("");
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
@@ -1971,10 +1706,7 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
   const [contentSection, setContentSection] = useState<ContentSection>(null);
 
   const [bannerForm, setBannerForm] = useState<Omit<Banner, "id" | "active">>({ title: "", subtitle: "", imageUrl: "", ctaText: "", link: "" });
-  const [campaigns, setCampaigns] = useState<Campaign[]>([
-    { id: 1, name: "Summer Luxury Sale", code: "SUMMER20", discount: "20", startDate: "2026-07-01", endDate: "2026-08-31", active: true },
-    { id: 2, name: "VIP Members Reward", code: "VIP15", discount: "15", startDate: "2026-06-01", endDate: "2026-12-31", active: true },
-  ]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [campaignForm, setCampaignForm] = useState<Omit<Campaign, "id" | "active">>({ name: "", code: "", discount: "", startDate: "", endDate: "" });
 
   const [contentSaved, setContentSaved] = useState(false);
@@ -2102,7 +1834,7 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
     if (k === "imageUrl" && typeof v === "string") setImagePreview(v);
   };
 
-  const handleSaveProduct = () => {
+  const handleSaveProduct = async () => {
     const fallbackImg = "https://images.unsplash.com/photo-1541778480-fc1752bbc2a9?w=600&h=600&fit=crop";
     const allImgs = productForm.imageUrls.length ? productForm.imageUrls : (productForm.imageUrl ? [productForm.imageUrl] : [fallbackImg]);
     const specsObj: Record<string, string> = {};
@@ -2129,14 +1861,19 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
         ? Math.round((1 - Number(productForm.price) / Number(productForm.originalPrice)) * 100)
         : 0,
     };
-    if (editingProductId !== null) {
-      setProducts((prev) => prev.map((p) => p.id === editingProductId ? { ...p, ...base } : p));
-    } else {
-      const newId = Math.max(...products.map((p) => p.id)) + 1;
-      setProducts((prev) => [...prev, { id: newId, ...base }]);
+    try {
+      if (editingProductId !== null) {
+        const updated = await updateProduct(editingProductId, base);
+        setProducts((prev) => prev.map((p) => p.id === editingProductId ? updated : p));
+      } else {
+        const created = await createProduct(base);
+        setProducts((prev) => [...prev, created]);
+      }
+      setProductSaved(true);
+      setTimeout(() => { setProductSaved(false); setProductModalOpen(false); }, 1000);
+    } catch (err) {
+      console.error("Failed to save product:", err);
     }
-    setProductSaved(true);
-    setTimeout(() => { setProductSaved(false); setProductModalOpen(false); }, 1000);
   };
 
   const tabs: { id: AdminTab; label: string; icon: ElementType }[] = [
@@ -2150,10 +1887,12 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
 
   const updateOrderStatus = (orderId: string, status: Order["status"]) => {
     setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status } : o));
+    updateOrderStatusDb(orderId, status).catch(console.error);
   };
 
-  const deleteProduct = (id: number) => {
+  const deleteProduct = (id: string) => {
     setProducts((prev) => prev.filter((p) => p.id !== id));
+    deleteProductDb(id).catch(console.error);
   };
 
   return (
@@ -2188,7 +1927,7 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
                 { label: "Total Products", value: products.length, icon: Package, color: "text-primary bg-primary/10" },
                 { label: "Total Orders", value: orders.length, icon: ShoppingBag, color: "text-status-info bg-status-info-bg" },
                 { label: "Total Revenue", value: `₦${(totalRevenue / 1000).toFixed(0)}k`, icon: DollarSign, color: "text-status-success bg-status-success-bg" },
-                { label: "Customers", value: CUSTOMERS.length, icon: Users, color: "text-status-purple bg-status-purple-bg" },
+                { label: "Customers", value: customers.length, icon: Users, color: "text-status-purple bg-status-purple-bg" },
                 { label: "Pending", value: pendingOrders, icon: Clock, color: "text-status-warning bg-status-warning-bg" },
                 { label: "Completed", value: completedOrders, icon: CheckCircle, color: "text-emerald-500 bg-emerald-500/10" },
               ].map(({ label, value, icon: Icon, color }) => (
@@ -2707,10 +2446,10 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
                         </div>
                       </div>
                       <div className="flex gap-2 shrink-0">
-                        <button onClick={() => setBanners(prev => prev.map(x => x.id === b.id ? {...x, active: !x.active} : x))} className={`text-xs px-2.5 py-1.5 rounded-sm border transition-all ${b.active ? "border-status-warning/40 text-status-warning hover:bg-status-warning-bg" : "border-status-success/40 text-status-success hover:bg-status-success-bg"}`}>
+                        <button onClick={() => { setBanners(prev => prev.map(x => x.id === b.id ? {...x, active: !x.active} : x)); updateBanner(b.id, { active: !b.active }).catch(console.error); }} className={`text-xs px-2.5 py-1.5 rounded-sm border transition-all ${b.active ? "border-status-warning/40 text-status-warning hover:bg-status-warning-bg" : "border-status-success/40 text-status-success hover:bg-status-success-bg"}`}>
                           {b.active ? "Deactivate" : "Activate"}
                         </button>
-                        <button onClick={() => setBanners(prev => prev.filter(x => x.id !== b.id))} className="p-1.5 hover:bg-muted rounded-sm text-muted-foreground hover:text-destructive transition-all">
+                        <button onClick={() => { setBanners(prev => prev.filter(x => x.id !== b.id)); deleteBanner(b.id).catch(console.error); }} className="p-1.5 hover:bg-muted rounded-sm text-muted-foreground hover:text-destructive transition-all">
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
@@ -2762,12 +2501,14 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
                       </div>
                     </div>
                     <button
-                      onClick={() => {
+                      onClick={async () => {
                         if (!bannerForm.title || !bannerForm.imageUrl) return;
-                        const newId = banners.length ? Math.max(...banners.map(b => b.id)) + 1 : 1;
-                        setBanners(prev => [...prev, { id: newId, ...bannerForm, active: true }]);
-                        setBannerForm({ title: "", subtitle: "", imageUrl: "", ctaText: "", link: "" });
-                        setContentSaved(true); setTimeout(() => setContentSaved(false), 1500);
+                        try {
+                          const created = await createBanner({ ...bannerForm, active: true });
+                          setBanners(prev => [...prev, created]);
+                          setBannerForm({ title: "", subtitle: "", imageUrl: "", ctaText: "", link: "" });
+                          setContentSaved(true); setTimeout(() => setContentSaved(false), 1500);
+                        } catch (err) { console.error(err); }
                       }}
                       className="px-5 py-2.5 bg-primary text-primary-foreground text-sm font-bold rounded-sm hover:bg-primary/90 transition-colors flex items-center gap-2"
                     >
@@ -2789,7 +2530,7 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
                 <div className="space-y-2 mb-5">
                   {products.map(p => (
                     <label key={p.id} className={`flex items-center gap-3 p-3 border rounded-sm cursor-pointer transition-all ${featuredIds.includes(p.id) ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}>
-                      <input type="checkbox" checked={featuredIds.includes(p.id)} onChange={e => setFeaturedIds(prev => e.target.checked ? [...prev, p.id] : prev.filter(id => id !== p.id))} className="accent-primary shrink-0" />
+                      <input type="checkbox" checked={featuredIds.includes(p.id)} onChange={e => { setFeaturedIds(prev => e.target.checked ? [...prev, p.id] : prev.filter(id => id !== p.id)); updateProduct(p.id, { ...p, isFeatured: e.target.checked }).catch(console.error); }} className="accent-primary shrink-0" />
                       <img src={p.image} alt={p.name} className="w-10 h-10 object-cover rounded-sm bg-secondary shrink-0" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{p.brand} {p.name}</p>
@@ -2816,7 +2557,7 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
                 <div className="space-y-2 mb-5">
                   {products.map(p => (
                     <label key={p.id} className={`flex items-center gap-3 p-3 border rounded-sm cursor-pointer transition-all ${newArrivalIds.includes(p.id) ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}>
-                      <input type="checkbox" checked={newArrivalIds.includes(p.id)} onChange={e => setNewArrivalIds(prev => e.target.checked ? [...prev, p.id] : prev.filter(id => id !== p.id))} className="accent-primary shrink-0" />
+                      <input type="checkbox" checked={newArrivalIds.includes(p.id)} onChange={e => { setNewArrivalIds(prev => e.target.checked ? [...prev, p.id] : prev.filter(id => id !== p.id)); updateProduct(p.id, { ...p, isNew: e.target.checked }).catch(console.error); }} className="accent-primary shrink-0" />
                       <img src={p.image} alt={p.name} className="w-10 h-10 object-cover rounded-sm bg-secondary shrink-0" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{p.brand} {p.name}</p>
@@ -2856,10 +2597,10 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <button onClick={() => setCampaigns(prev => prev.map(x => x.id === c.id ? {...x, active: !x.active} : x))} className={`text-xs px-2.5 py-1.5 rounded-sm border transition-all ${c.active ? "border-status-warning/40 text-status-warning hover:bg-status-warning-bg" : "border-status-success/40 text-status-success hover:bg-status-success-bg"}`}>
+                        <button onClick={() => { setCampaigns(prev => prev.map(x => x.id === c.id ? {...x, active: !x.active} : x)); updateCampaign(c.id, { active: !c.active }).catch(console.error); }} className={`text-xs px-2.5 py-1.5 rounded-sm border transition-all ${c.active ? "border-status-warning/40 text-status-warning hover:bg-status-warning-bg" : "border-status-success/40 text-status-success hover:bg-status-success-bg"}`}>
                           {c.active ? "Pause" : "Activate"}
                         </button>
-                        <button onClick={() => setCampaigns(prev => prev.filter(x => x.id !== c.id))} className="p-1.5 hover:bg-muted rounded-sm text-muted-foreground hover:text-destructive transition-all">
+                        <button onClick={() => { setCampaigns(prev => prev.filter(x => x.id !== c.id)); deleteCampaign(c.id).catch(console.error); }} className="p-1.5 hover:bg-muted rounded-sm text-muted-foreground hover:text-destructive transition-all">
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
@@ -2895,12 +2636,14 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
                       </div>
                     </div>
                     <button
-                      onClick={() => {
+                      onClick={async () => {
                         if (!campaignForm.name || !campaignForm.code) return;
-                        const newId = campaigns.length ? Math.max(...campaigns.map(c => c.id)) + 1 : 1;
-                        setCampaigns(prev => [...prev, { id: newId, ...campaignForm, active: true }]);
-                        setCampaignForm({ name: "", code: "", discount: "", startDate: "", endDate: "" });
-                        setContentSaved(true); setTimeout(() => setContentSaved(false), 1500);
+                        try {
+                          const created = await createCampaign({ ...campaignForm, active: true });
+                          setCampaigns(prev => [...prev, created]);
+                          setCampaignForm({ name: "", code: "", discount: "", startDate: "", endDate: "" });
+                          setContentSaved(true); setTimeout(() => setContentSaved(false), 1500);
+                        } catch (err) { console.error(err); }
                       }}
                       className="px-5 py-2.5 bg-primary text-primary-foreground text-sm font-bold rounded-sm hover:bg-primary/90 transition-colors flex items-center gap-2"
                     >
@@ -2921,15 +2664,23 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
 
 function LoginPage({ onNavigate, onLogin }: {
   onNavigate: (page: Page) => void;
-  onLogin: (user: { name: string; email: string }, isAdmin?: boolean) => void;
+  onLogin: (email: string, password: string) => Promise<void>;
 }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    if (email && password) {
-      const isAdmin = email.toLowerCase().includes("admin");
-      onLogin({ name: isAdmin ? "Admin User" : "James Okafor", email }, isAdmin);
+  const handleLogin = async () => {
+    if (!email || !password) return;
+    setLoading(true);
+    setError("");
+    try {
+      await onLogin(email, password);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to sign in");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -2957,14 +2708,14 @@ function LoginPage({ onNavigate, onLogin }: {
               <button className="text-xs text-primary hover:underline">Forgot password?</button>
             </div>
           </div>
-          <button onClick={handleLogin} className="w-full py-3.5 bg-primary text-primary-foreground font-bold rounded-sm hover:bg-primary/90 transition-colors">
-            Sign In
+          {error && (
+            <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-sm text-sm text-destructive">
+              {error}
+            </div>
+          )}
+          <button onClick={handleLogin} disabled={loading} className="w-full py-3.5 bg-primary text-primary-foreground font-bold rounded-sm hover:bg-primary/90 transition-colors disabled:opacity-50">
+            {loading ? "Signing in..." : "Sign In"}
           </button>
-          <div className="mt-4 p-3 bg-muted rounded-sm text-xs text-muted-foreground">
-            <p className="font-semibold mb-1">Demo accounts:</p>
-            <p>Customer: any email + password</p>
-            <p>Admin: use "admin" in email address</p>
-          </div>
           <p className="text-center text-sm text-muted-foreground mt-5">
             {"Don't have an account? "}
             <button onClick={() => onNavigate("register")} className="text-primary hover:underline font-medium">Create one</button>
@@ -2975,15 +2726,24 @@ function LoginPage({ onNavigate, onLogin }: {
   );
 }
 
-function RegisterPage({ onNavigate, onLogin }: {
+function RegisterPage({ onNavigate, onRegister }: {
   onNavigate: (page: Page) => void;
-  onLogin: (user: { name: string; email: string }) => void;
+  onRegister: (firstName: string, lastName: string, email: string, password: string) => Promise<void>;
 }) {
   const [form, setForm] = useState({ firstName: "", lastName: "", email: "", password: "" });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const handleField = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
-  const handleRegister = () => {
-    if (form.firstName && form.email) {
-      onLogin({ name: `${form.firstName} ${form.lastName}`, email: form.email });
+  const handleRegister = async () => {
+    if (!form.firstName || !form.email || !form.password) return;
+    setLoading(true);
+    setError("");
+    try {
+      await onRegister(form.firstName, form.lastName, form.email, form.password);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create account");
+    } finally {
+      setLoading(false);
     }
   };
   return (
@@ -3015,8 +2775,13 @@ function RegisterPage({ onNavigate, onLogin }: {
             </div>
           </div>
           <p className="text-xs text-muted-foreground mb-4">By creating an account, you agree to our <button className="text-primary hover:underline">Terms of Service</button> and <button className="text-primary hover:underline">Privacy Policy</button>.</p>
-          <button onClick={handleRegister} className="w-full py-3.5 bg-primary text-primary-foreground font-bold rounded-sm hover:bg-primary/90 transition-colors">
-            Create Account
+          {error && (
+            <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-sm text-sm text-destructive">
+              {error}
+            </div>
+          )}
+          <button onClick={handleRegister} disabled={loading} className="w-full py-3.5 bg-primary text-primary-foreground font-bold rounded-sm hover:bg-primary/90 transition-colors disabled:opacity-50">
+            {loading ? "Creating account..." : "Create Account"}
           </button>
           <p className="text-center text-sm text-muted-foreground mt-5">
             Already have an account?{" "}
@@ -3183,7 +2948,7 @@ function FAQPage() {
 
 function WishlistPage({ wishlist, onNavigate, onToggleWishlist, onAddToCart }: {
   wishlist: Product[];
-  onNavigate: (page: Page, id?: number) => void;
+  onNavigate: (page: Page, id?: string) => void;
   onToggleWishlist: (p: Product) => void;
   onAddToCart: (p: Product) => void;
 }) {
@@ -3215,20 +2980,48 @@ function WishlistPage({ wishlist, onNavigate, onToggleWishlist, onAddToCart }: {
 export default function App() {
   const [darkMode, setDarkMode] = useState(true);
   const [currentPage, setCurrentPage] = useState<Page>("home");
-  const [banners, setBanners] = useState<Banner[]>([
-    { id: 1, title: "Time is Art", subtitle: "Discover the world's finest timepieces — from hand-assembled tourbillons to precision sports chronographs. Every watch tells a story worth wearing.", imageUrl: "https://images.unsplash.com/photo-1618215650148-e8e61eae521c?w=1400&h=900&fit=crop&auto=format", ctaText: "Explore Collection", link: "/shop", active: true },
-    { id: 2, title: "The Elara Moonphase", subtitle: "Limited edition — only 88 pieces worldwide. Hand-assembled over 400 hours with grand feu enamel dial.", imageUrl: "https://images.unsplash.com/photo-1541778480-fc1752bbc2a9?w=1400&h=900&fit=crop&auto=format", ctaText: "Discover More", link: "/product/11", active: true },
-  ]);
-  const [products, setProducts] = useState<Product[]>(PRODUCTS);
-  const [featuredIds, setFeaturedIds] = useState<number[]>(PRODUCTS.filter(p => p.isFeatured).map(p => p.id));
-  const [newArrivalIds, setNewArrivalIds] = useState<number[]>(PRODUCTS.filter(p => p.isNew).map(p => p.id));
-  const [selectedProductId, setSelectedProductId] = useState<number>(1);
+  const [banners, setBanners] = useState<Banner[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [featuredIds, setFeaturedIds] = useState<string[]>([]);
+  const [newArrivalIds, setNewArrivalIds] = useState<string[]>([]);
+  const [selectedProductId, setSelectedProductId] = useState<string>("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [wishlist, setWishlist] = useState<Product[]>([]);
-  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+  const [user, setUser] = useState<AppUser | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const navigate = useCallback((page: Page, productId?: number) => {
+  useEffect(() => {
+    (async () => {
+      try {
+        const [prods, bans, currentUser] = await Promise.all([
+          fetchProducts(),
+          fetchBanners(),
+          getCurrentUser(),
+        ]);
+        setProducts(prods);
+        setBanners(bans);
+        setFeaturedIds(prods.filter((p) => p.isFeatured).map((p) => p.id));
+        setNewArrivalIds(prods.filter((p) => p.isNew).map((p) => p.id));
+        if (currentUser) {
+          setUser(currentUser);
+          setIsAdmin(currentUser.isAdmin);
+          const [cartItems, wishItems] = await Promise.all([
+            fetchCart(prods),
+            fetchWishlist(prods),
+          ]);
+          setCart(cartItems);
+          setWishlist(wishItems);
+        }
+      } catch (err) {
+        console.error("Failed to load data:", err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  const navigate = useCallback((page: Page, productId?: string) => {
     if (productId !== undefined) setSelectedProductId(productId);
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -3240,40 +3033,103 @@ export default function App() {
       if (existing) return prev.map((i) => i.product.id === product.id ? { ...i, quantity: Math.min(i.quantity + 1, product.stock) } : i);
       return [...prev, { product, quantity: 1, selectedColor: product.colors[0] }];
     });
-  }, []);
+    if (user) {
+      addToCartDb(product.id, 1, product.colors[0] || "").catch(console.error);
+    }
+  }, [user]);
 
-  const updateCart = useCallback((productId: number, qty: number) => {
+  const updateCart = useCallback((productId: string, qty: number) => {
     setCart((prev) => prev.map((i) => i.product.id === productId ? { ...i, quantity: qty } : i));
-  }, []);
+    if (user) {
+      updateCartDb(productId, qty).catch(console.error);
+    }
+  }, [user]);
 
-  const removeFromCart = useCallback((productId: number) => {
+  const removeFromCart = useCallback((productId: string) => {
     setCart((prev) => prev.filter((i) => i.product.id !== productId));
-  }, []);
+    if (user) {
+      removeFromCartDb(productId).catch(console.error);
+    }
+  }, [user]);
 
   const toggleWishlist = useCallback((product: Product) => {
-    setWishlist((prev) => prev.some((p) => p.id === product.id) ? prev.filter((p) => p.id !== product.id) : [...prev, product]);
-  }, []);
+    setWishlist((prev) => {
+      const exists = prev.some((p) => p.id === product.id);
+      if (user) {
+        toggleWishlistDb(product.id, !exists).catch(console.error);
+      }
+      return exists ? prev.filter((p) => p.id !== product.id) : [...prev, product];
+    });
+  }, [user]);
 
-  const handleLogin = (u: { name: string; email: string }, admin = false) => {
-    setUser(u);
-    setIsAdmin(admin);
-    navigate(admin ? "admin" : "home");
+  const handleLogin = async (email: string, password: string) => {
+    try {
+      const u = await signIn(email, password);
+      setUser(u);
+      setIsAdmin(u.isAdmin);
+      navigate(u.isAdmin ? "admin" : "home");
+      const [cartItems, wishItems] = await Promise.all([
+        fetchCart(products),
+        fetchWishlist(products),
+      ]);
+      setCart(cartItems);
+      setWishlist(wishItems);
+    } catch (err) {
+      throw err;
+    }
   };
 
-  const handleLogout = () => {
+  const handleRegister = async (firstName: string, lastName: string, email: string, password: string) => {
+    try {
+      const u = await signUp(email, password, `${firstName} ${lastName}`);
+      setUser(u);
+      setIsAdmin(u.isAdmin);
+      navigate("home");
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  const handleLogout = async () => {
+    await signOut();
     setUser(null);
     setIsAdmin(false);
+    setCart([]);
+    setWishlist([]);
     navigate("home");
   };
 
-  const handlePlaceOrder = () => {
-    setCart([]);
-    navigate("confirmation");
+  const handlePlaceOrder = async (customerInfo: { name: string; email: string; address: string; paymentMethod: string }) => {
+    if (!user) {
+      navigate("login");
+      return;
+    }
+    try {
+      await placeOrderDb(cart, customerInfo);
+      setCart([]);
+      navigate("confirmation");
+    } catch (err) {
+      console.error("Failed to place order:", err);
+      throw err;
+    }
   };
 
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
 
   const showFooter = !["admin", "login", "register"].includes(currentPage);
+
+  if (loading) {
+    return (
+      <div className={darkMode ? "dark" : ""}>
+        <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-12 h-12 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={darkMode ? "dark" : ""}>
@@ -3284,7 +3140,7 @@ export default function App() {
           cartCount={cartCount}
           darkMode={darkMode}
           onToggleDark={() => setDarkMode(!darkMode)}
-          user={user}
+          user={user ? { name: user.name, email: user.email } : null}
           isAdmin={isAdmin}
           onLogout={handleLogout}
         />
@@ -3303,19 +3159,19 @@ export default function App() {
             <NewArrivalsPage onNavigate={navigate} onAddToCart={addToCart} onToggleWishlist={toggleWishlist} wishlist={wishlist} products={products} newArrivalIds={newArrivalIds} />
           )}
           {currentPage === "cart" && (
-            <CartPage cart={cart} onUpdateCart={updateCart} onRemoveFromCart={removeFromCart} onNavigate={navigate} onClearCart={() => setCart([])} />
+            <CartPage cart={cart} onUpdateCart={updateCart} onRemoveFromCart={removeFromCart} onNavigate={navigate} onClearCart={() => { setCart([]); if (user) clearCartDb().catch(console.error); }} />
           )}
           {currentPage === "wishlist" && (
             <WishlistPage wishlist={wishlist} onNavigate={navigate} onToggleWishlist={toggleWishlist} onAddToCart={addToCart} />
           )}
           {currentPage === "checkout" && (
-            <CheckoutPage cart={cart} onNavigate={navigate} onPlaceOrder={handlePlaceOrder} />
+            <CheckoutPage cart={cart} onNavigate={navigate} onPlaceOrder={handlePlaceOrder} user={user} />
           )}
           {currentPage === "confirmation" && (
             <ConfirmationPage onNavigate={navigate} />
           )}
           {currentPage === "account" && (
-            <UserDashboard user={user} wishlist={wishlist} onNavigate={navigate} onToggleWishlist={toggleWishlist} />
+            <UserDashboard user={user ? { name: user.name, email: user.email } : null} wishlist={wishlist} onNavigate={navigate} onToggleWishlist={toggleWishlist} />
           )}
           {currentPage === "admin" && (
             <AdminDashboard banners={banners} setBanners={setBanners} featuredIds={featuredIds} setFeaturedIds={setFeaturedIds} newArrivalIds={newArrivalIds} setNewArrivalIds={setNewArrivalIds} products={products} setProducts={setProducts} />
@@ -3324,7 +3180,7 @@ export default function App() {
             <LoginPage onNavigate={navigate} onLogin={handleLogin} />
           )}
           {currentPage === "register" && (
-            <RegisterPage onNavigate={navigate} onLogin={(u) => handleLogin(u, false)} />
+            <RegisterPage onNavigate={navigate} onRegister={handleRegister} />
           )}
           {currentPage === "about" && <AboutPage />}
           {currentPage === "contact" && <ContactPage />}
