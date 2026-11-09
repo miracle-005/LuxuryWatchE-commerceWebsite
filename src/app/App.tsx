@@ -6,9 +6,10 @@ import {
   MapPin, Phone, Mail, Instagram, Twitter, Facebook, Youtube,
   Filter, Plus, Minus, Trash2, Check, Download, Truck, BarChart2,
   ShoppingBag, ArrowRight, ChevronRight, ChevronDown, Sun, Moon,
-  Award, Shield, Zap, Eye, Edit2, Settings, ChevronLeft, Home,
+  Award, Shield, Zap, Eye, EyeOff, Edit2, Settings, ChevronLeft, Home,
   Tag, FileText, MessageCircle, HelpCircle, Info, RefreshCw,
-  CheckCircle, XCircle, AlertCircle, Globe, Layers, Upload
+  CheckCircle, XCircle, AlertCircle, Globe, Layers, Upload, Activity, MoreHorizontal,
+  PanelLeftClose, PanelLeftOpen
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -23,7 +24,10 @@ type Page =
   | "register" | "about" | "contact" | "faq" | "wishlist";
 
 type AdminTab =
-  | "overview" | "products" | "orders" | "customers" | "content" | "payments";
+  | "overview" | "products" | "orders" | "customers" | "content" | "payments"
+  | "activityLogs";
+
+type UserRole = "user" | "admin" | "superAdmin";
 
 type AccountTab =
   | "profile" | "orders" | "wishlist" | "addresses" | "payments" | "notifications";
@@ -59,6 +63,8 @@ interface Order {
   id: string;
   date: string;
   status: "Pending" | "Processing" | "Shipped" | "Delivered" | "Cancelled";
+  paymentStatus: "Paid" | "Pending" | "Failed" | "Refunded";
+  paymentMethod: "Card" | "Bank Transfer" | "Flutterwave";
   total: number;
   items: { name: string; qty: number; price: number }[];
   customer: string;
@@ -76,6 +82,17 @@ interface Customer {
   joined: string;
   status: "Active" | "Inactive";
   avatar: string;
+}
+
+interface UserActivityLog {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  loginTime: string;
+  logoutTime: string;
+  duration: string;
+  status: "Active" | "Logged Out" | "Failed Login";
 }
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
@@ -357,14 +374,14 @@ const PRODUCTS: Product[] = [
 ];
 
 const ORDERS: Order[] = [
-  { id: "ORD-7841", date: "2026-07-08", status: "Delivered", total: 4850, customer: "James Okafor", email: "james@example.com", address: "14 Victoria Island, Lagos", items: [{ name: "Noir Eclipse", qty: 1, price: 4850 }] },
-  { id: "ORD-7839", date: "2026-07-07", status: "Shipped", total: 7099, customer: "Amara Diallo", email: "amara@example.com", address: "3 Banana Island, Lagos", items: [{ name: "Chronos Royale", qty: 1, price: 6200 }, { name: "Cascade Urban", qty: 1, price: 395 }] },
-  { id: "ORD-7835", date: "2026-07-05", status: "Processing", total: 1850, customer: "Emeka Nwosu", email: "emeka@example.com", address: "7 Maitama, Abuja", items: [{ name: "Storm Pro X", qty: 1, price: 1850 }] },
-  { id: "ORD-7830", date: "2026-07-03", status: "Pending", total: 1798, customer: "Fatima Al-Hassan", email: "fatima@example.com", address: "22 Ikoyi, Lagos", items: [{ name: "Nova Smart Elite", qty: 2, price: 899 }] },
-  { id: "ORD-7821", date: "2026-07-01", status: "Cancelled", total: 8900, customer: "Chidi Obi", email: "chidi@example.com", address: "5 GRA, Port Harcourt", items: [{ name: "Elara Moonphase", qty: 1, price: 8900 }] },
-  { id: "ORD-7815", date: "2026-06-29", status: "Delivered", total: 3200, customer: "Ngozi Adeyemi", email: "ngozi@example.com", address: "9 Lekki Phase 1, Lagos", items: [{ name: "Soleil Rose", qty: 1, price: 3200 }] },
-  { id: "ORD-7810", date: "2026-06-27", status: "Delivered", total: 2100, customer: "Taiwo Bello", email: "taiwo@example.com", address: "17 Wuse, Abuja", items: [{ name: "Titan Storm", qty: 1, price: 2100 }] },
-  { id: "ORD-7805", date: "2026-06-25", status: "Shipped", total: 680, customer: "Adaeze Nkemdirim", email: "adaeze@example.com", address: "11 GRA, Enugu", items: [{ name: "Heritage Bronze", qty: 1, price: 680 }] },
+  { id: "ORD-7841", date: "2026-07-08", status: "Delivered", paymentStatus: "Paid", paymentMethod: "Flutterwave", total: 4850, customer: "James Okafor", email: "james@example.com", address: "14 Victoria Island, Lagos", items: [{ name: "Noir Eclipse", qty: 1, price: 4850 }] },
+  { id: "ORD-7839", date: "2026-07-07", status: "Shipped", paymentStatus: "Paid", paymentMethod: "Card", total: 7099, customer: "Amara Diallo", email: "amara@example.com", address: "3 Banana Island, Lagos", items: [{ name: "Chronos Royale", qty: 1, price: 6200 }, { name: "Cascade Urban", qty: 1, price: 395 }] },
+  { id: "ORD-7835", date: "2026-07-05", status: "Processing", paymentStatus: "Paid", paymentMethod: "Bank Transfer", total: 1850, customer: "Emeka Nwosu", email: "emeka@example.com", address: "7 Maitama, Abuja", items: [{ name: "Storm Pro X", qty: 1, price: 1850 }] },
+  { id: "ORD-7830", date: "2026-07-03", status: "Pending", paymentStatus: "Pending", paymentMethod: "Flutterwave", total: 1798, customer: "Fatima Al-Hassan", email: "fatima@example.com", address: "22 Ikoyi, Lagos", items: [{ name: "Nova Smart Elite", qty: 2, price: 899 }] },
+  { id: "ORD-7821", date: "2026-07-01", status: "Cancelled", paymentStatus: "Refunded", paymentMethod: "Card", total: 8900, customer: "Chidi Obi", email: "chidi@example.com", address: "5 GRA, Port Harcourt", items: [{ name: "Elara Moonphase", qty: 1, price: 8900 }] },
+  { id: "ORD-7815", date: "2026-06-29", status: "Delivered", paymentStatus: "Paid", paymentMethod: "Flutterwave", total: 3200, customer: "Ngozi Adeyemi", email: "ngozi@example.com", address: "9 Lekki Phase 1, Lagos", items: [{ name: "Soleil Rose", qty: 1, price: 3200 }] },
+  { id: "ORD-7810", date: "2026-06-27", status: "Delivered", paymentStatus: "Paid", paymentMethod: "Bank Transfer", total: 2100, customer: "Taiwo Bello", email: "taiwo@example.com", address: "17 Wuse, Abuja", items: [{ name: "Titan Storm", qty: 1, price: 2100 }] },
+  { id: "ORD-7805", date: "2026-06-25", status: "Shipped", paymentStatus: "Failed", paymentMethod: "Card", total: 680, customer: "Adaeze Nkemdirim", email: "adaeze@example.com", address: "11 GRA, Enugu", items: [{ name: "Heritage Bronze", qty: 1, price: 680 }] },
 ];
 
 const CUSTOMERS: Customer[] = [
@@ -374,6 +391,15 @@ const CUSTOMERS: Customer[] = [
   { id: 4, name: "Fatima Al-Hassan", email: "fatima@example.com", phone: "+234 804 567 8901", orders: 5, spent: 9450, joined: "2024-11-30", status: "Active", avatar: "FA" },
   { id: 5, name: "Chidi Obi", email: "chidi@example.com", phone: "+234 805 678 9012", orders: 1, spent: 0, joined: "2025-07-01", status: "Inactive", avatar: "CO" },
   { id: 6, name: "Ngozi Adeyemi", email: "ngozi@example.com", phone: "+234 806 789 0123", orders: 9, spent: 31500, joined: "2023-08-14", status: "Active", avatar: "NA" },
+];
+
+const USER_ACTIVITY_LOGS: UserActivityLog[] = [
+  { id: 1, name: "James Okafor", email: "james@example.com", phone: "+234 801 234 5678", loginTime: "08 Jul 2026, 09:14", logoutTime: "—", duration: "2h 18m", status: "Active" },
+  { id: 2, name: "Amara Diallo", email: "amara@example.com", phone: "+234 802 345 6789", loginTime: "08 Jul 2026, 08:41", logoutTime: "08 Jul 2026, 10:03", duration: "1h 22m", status: "Logged Out" },
+  { id: 3, name: "Emeka Nwosu", email: "emeka@example.com", phone: "+234 803 456 7890", loginTime: "08 Jul 2026, 08:17", logoutTime: "08 Jul 2026, 08:17", duration: "0m", status: "Failed Login" },
+  { id: 4, name: "Fatima Al-Hassan", email: "fatima@example.com", phone: "+234 804 567 8901", loginTime: "07 Jul 2026, 17:32", logoutTime: "07 Jul 2026, 18:46", duration: "1h 14m", status: "Logged Out" },
+  { id: 5, name: "Ngozi Adeyemi", email: "ngozi@example.com", phone: "+234 806 789 0123", loginTime: "07 Jul 2026, 15:05", logoutTime: "—", duration: "18h 27m", status: "Active" },
+  { id: 6, name: "Chidi Obi", email: "chidi@example.com", phone: "+234 805 678 9012", loginTime: "07 Jul 2026, 11:48", logoutTime: "07 Jul 2026, 11:48", duration: "0m", status: "Failed Login" },
 ];
 
 const REVENUE_DATA = [
@@ -715,7 +741,7 @@ function Navbar({
         {searchOpen && (
           <div
             ref={searchPanelRef}
-            className="absolute right-4 sm:right-6 lg:right-8 top-full mt-2 w-[calc(100%-2rem)] sm:w-80 bg-card border border-border rounded-sm p-2 shadow-xl z-50"
+            className="absolute right-4 sm:right-6 lg:right-8 top-full mt-2 w-[calc(100%-2rem)] sm:w-80 bg-card border border-border rounded-[7px] p-2 shadow-xl z-50"
           >
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -726,7 +752,7 @@ function Navbar({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") { onNavigate("shop"); setSearchOpen(false); }}}
-                className="w-full pl-9 pr-4 py-2.5 bg-muted border border-border rounded-sm text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-full pl-9 pr-4 py-2.5 bg-muted border border-border rounded-[7px] text-sm focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
           </div>
@@ -2017,10 +2043,146 @@ const EMPTY_FORM: ProductFormData = {
   colors: [{ label: "", hex: "#000000" }],
 };
 
-function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newArrivalIds, setNewArrivalIds, products, setProducts }: { banners: Banner[]; setBanners: React.Dispatch<React.SetStateAction<Banner[]>>; featuredIds: number[]; setFeaturedIds: React.Dispatch<React.SetStateAction<number[]>>; newArrivalIds: number[]; setNewArrivalIds: React.Dispatch<React.SetStateAction<number[]>>; products: Product[]; setProducts: React.Dispatch<React.SetStateAction<Product[]>> }) {
+const DEFAULT_ADMIN_PAGE_SIZE = 10;
+const ADMIN_PAGE_SIZE_OPTIONS = [5, 10, 20, 25];
+
+function parseActivityLogTimestamp(value: string) {
+  const [datePart, timePart = "00:00"] = value.split(", ");
+  const [day, monthName, year] = datePart.split(" ");
+  const [hours, minutes] = timePart.split(":").map(Number);
+  const monthIndex = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].indexOf(monthName);
+  return new Date(Number(year), monthIndex, Number(day), hours, minutes).getTime();
+}
+
+function downloadTableFile(
+  filename: string,
+  headers: string[],
+  rows: Array<Array<string | number>>,
+  format: "csv" | "excel",
+) {
+  let content: string;
+  let type: string;
+
+  if (format === "csv") {
+    const escapeCell = (value: string | number) => `"${String(value).replace(/"/g, "\"\"")}"`;
+    content = [headers, ...rows].map((row) => row.map(escapeCell).join(",")).join("\n");
+    type = "text/csv;charset=utf-8";
+  } else {
+    const escapeHtml = (value: string | number) => String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+    content = `<table><thead><tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join("")}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+    type = "application/vnd.ms-excel";
+  }
+
+  const url = URL.createObjectURL(new Blob([content], { type }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function PaginationControls({ page, pageSize, totalItems, onPageChange, onPageSizeChange }: {
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
+}) {
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const start = totalItems === 0 ? 0 : (safePage - 1) * pageSize + 1;
+  const end = Math.min(safePage * pageSize, totalItems);
+
+  return (
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 py-3 border-t border-border bg-muted/10">
+      <div className="flex flex-wrap items-center gap-4">
+        <p className="text-xs text-muted-foreground font-mono">
+          Showing {start}–{end} of {totalItems}
+        </p>
+        <label className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span>Rows per page</span>
+          <select
+            value={pageSize}
+            onChange={(event) => {
+              onPageSizeChange(Number(event.target.value));
+              onPageChange(1);
+            }}
+            className="admin-page-size-select h-8 min-h-0 px-2.5 py-1 bg-card border border-border rounded-[7px] text-xs font-mono focus:outline-none focus:ring-2 focus:ring-primary/20"
+            aria-label="Rows per page"
+          >
+            {ADMIN_PAGE_SIZE_OPTIONS.map((size) => <option key={size} value={size}>{size}</option>)}
+          </select>
+        </label>
+      </div>
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => onPageChange(Math.max(1, safePage - 1))}
+          disabled={safePage === 1}
+          className="w-8 h-8 flex items-center justify-center border border-border rounded-sm text-muted-foreground hover:text-primary hover:border-primary disabled:opacity-40 disabled:pointer-events-none transition-colors"
+          aria-label="Previous page"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+        {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNumber) => (
+          <button
+            key={pageNumber}
+            onClick={() => onPageChange(pageNumber)}
+            className={`w-8 h-8 rounded-sm text-xs font-mono border transition-colors ${safePage === pageNumber ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:text-primary hover:border-primary"}`}
+          >
+            {pageNumber}
+          </button>
+        ))}
+        <button
+          onClick={() => onPageChange(Math.min(totalPages, safePage + 1))}
+          disabled={safePage === totalPages}
+          className="w-8 h-8 flex items-center justify-center border border-border rounded-sm text-muted-foreground hover:text-primary hover:border-primary disabled:opacity-40 disabled:pointer-events-none transition-colors"
+          aria-label="Next page"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newArrivalIds, setNewArrivalIds, products, setProducts, isSuperAdmin }: { banners: Banner[]; setBanners: React.Dispatch<React.SetStateAction<Banner[]>>; featuredIds: number[]; setFeaturedIds: React.Dispatch<React.SetStateAction<number[]>>; newArrivalIds: number[]; setNewArrivalIds: React.Dispatch<React.SetStateAction<number[]>>; products: Product[]; setProducts: React.Dispatch<React.SetStateAction<Product[]>>; isSuperAdmin: boolean }) {
   const [activeTab, setActiveTab] = useState<AdminTab>("overview");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [orders, setOrders] = useState<Order[]>(ORDERS);
   const [customers, setCustomers] = useState<typeof CUSTOMERS>(CUSTOMERS);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [productPage, setProductPage] = useState(1);
+  const [productPageSize, setProductPageSize] = useState(DEFAULT_ADMIN_PAGE_SIZE);
+  const [orderSearch, setOrderSearch] = useState("");
+  const [orderStatus, setOrderStatus] = useState("All");
+  const [orderPaymentStatus, setOrderPaymentStatus] = useState("All");
+  const [orderDateFrom, setOrderDateFrom] = useState("");
+  const [orderDateTo, setOrderDateTo] = useState("");
+  const [orderPage, setOrderPage] = useState(1);
+  const [orderPageSize, setOrderPageSize] = useState(DEFAULT_ADMIN_PAGE_SIZE);
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [customerStatus, setCustomerStatus] = useState("All");
+  const [customerDateFrom, setCustomerDateFrom] = useState("");
+  const [customerDateTo, setCustomerDateTo] = useState("");
+  const [customerPage, setCustomerPage] = useState(1);
+  const [customerPageSize, setCustomerPageSize] = useState(DEFAULT_ADMIN_PAGE_SIZE);
+  const [paymentSearch, setPaymentSearch] = useState("");
+  const [paymentStatus, setPaymentStatus] = useState("All");
+  const [paymentDateFrom, setPaymentDateFrom] = useState("");
+  const [paymentDateTo, setPaymentDateTo] = useState("");
+  const [paymentPage, setPaymentPage] = useState(1);
+  const [paymentPageSize, setPaymentPageSize] = useState(DEFAULT_ADMIN_PAGE_SIZE);
+  const [activitySearch, setActivitySearch] = useState("");
+  const [activityStatus, setActivityStatus] = useState("All");
+  const [activityDateFrom, setActivityDateFrom] = useState("");
+  const [activityDateTo, setActivityDateTo] = useState("");
+  const [activityPage, setActivityPage] = useState(1);
+  const [activityPageSize, setActivityPageSize] = useState(DEFAULT_ADMIN_PAGE_SIZE);
 
   // Product modal state
   const [productModalOpen, setProductModalOpen] = useState(false);
@@ -2052,6 +2214,7 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
   const totalRevenue = orders.filter((o) => o.status === "Delivered").reduce((s, o) => s + o.total, 0);
   const pendingOrders = orders.filter((o) => o.status === "Pending").length;
   const completedOrders = orders.filter((o) => o.status === "Delivered").length;
+  const cancelledOrders = orders.filter((o) => o.status === "Cancelled").length;
 
   // Live revenue by month — derived from orders
   const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -2099,6 +2262,80 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
     Delivered: "text-status-success bg-status-success-bg",
     Cancelled: "text-status-error bg-status-error-bg",
   };
+
+  const filteredOrders = useMemo(() => {
+    const query = orderSearch.trim().toLowerCase();
+    return orders.filter((order) => {
+      const matchesSearch = !query || order.customer.toLowerCase().includes(query) || order.email.toLowerCase().includes(query) || order.id.toLowerCase().includes(query) || order.items.some((item) => item.name.toLowerCase().includes(query));
+      const matchesStatus = orderStatus === "All" || order.status === orderStatus;
+      const matchesPaymentStatus = orderPaymentStatus === "All" || order.paymentStatus === orderPaymentStatus;
+      const matchesFrom = !orderDateFrom || order.date >= orderDateFrom;
+      const matchesTo = !orderDateTo || order.date <= orderDateTo;
+      return matchesSearch && matchesStatus && matchesPaymentStatus && matchesFrom && matchesTo;
+    });
+  }, [orders, orderSearch, orderStatus, orderPaymentStatus, orderDateFrom, orderDateTo]);
+
+  const filteredCustomers = useMemo(() => {
+    const query = customerSearch.trim().toLowerCase();
+    return customers.filter((customer) => {
+      const matchesSearch = !query || customer.name.toLowerCase().includes(query) || customer.email.toLowerCase().includes(query);
+      const matchesStatus = customerStatus === "All" || customer.status === customerStatus;
+      const matchesFrom = !customerDateFrom || customer.joined >= customerDateFrom;
+      const matchesTo = !customerDateTo || customer.joined <= customerDateTo;
+      return matchesSearch && matchesStatus && matchesFrom && matchesTo;
+    });
+  }, [customers, customerSearch, customerStatus, customerDateFrom, customerDateTo]);
+
+  const filteredPayments = useMemo(() => {
+    const query = paymentSearch.trim().toLowerCase();
+    return orders.filter((order) => {
+      const matchesSearch = !query || order.customer.toLowerCase().includes(query) || order.email.toLowerCase().includes(query) || order.id.toLowerCase().includes(query);
+      const matchesStatus = paymentStatus === "All" || order.status === paymentStatus;
+      const matchesFrom = !paymentDateFrom || order.date >= paymentDateFrom;
+      const matchesTo = !paymentDateTo || order.date <= paymentDateTo;
+      return matchesSearch && matchesStatus && matchesFrom && matchesTo;
+    });
+  }, [orders, paymentSearch, paymentStatus, paymentDateFrom, paymentDateTo]);
+
+  const filteredActivityLogs = useMemo(() => {
+    const query = activitySearch.trim().toLowerCase();
+    const start = activityDateFrom ? new Date(`${activityDateFrom}T00:00:00`).getTime() : null;
+    const end = activityDateTo ? new Date(`${activityDateTo}T23:59:59`).getTime() : null;
+    return USER_ACTIVITY_LOGS.filter((log) => {
+      const loginTimestamp = parseActivityLogTimestamp(log.loginTime);
+      const matchesSearch = !query || log.name.toLowerCase().includes(query) || log.email.toLowerCase().includes(query);
+      const matchesStatus = activityStatus === "All" || log.status === activityStatus;
+      const matchesFrom = start === null || loginTimestamp >= start;
+      const matchesTo = end === null || loginTimestamp <= end;
+      return matchesSearch && matchesStatus && matchesFrom && matchesTo;
+    });
+  }, [activitySearch, activityStatus, activityDateFrom, activityDateTo]);
+
+  const paginatedProducts = products.slice((productPage - 1) * productPageSize, productPage * productPageSize);
+  const paginatedOrders = filteredOrders.slice((orderPage - 1) * orderPageSize, orderPage * orderPageSize);
+  const paginatedCustomers = filteredCustomers.slice((customerPage - 1) * customerPageSize, customerPage * customerPageSize);
+  const paginatedPayments = filteredPayments.slice((paymentPage - 1) * paymentPageSize, paymentPage * paymentPageSize);
+  const paginatedActivityLogs = filteredActivityLogs.slice((activityPage - 1) * activityPageSize, activityPage * activityPageSize);
+
+  useEffect(() => {
+    setProductPage((page) => Math.min(page, Math.max(1, Math.ceil(products.length / productPageSize))));
+  }, [products.length, productPageSize]);
+
+  useEffect(() => {
+    setOrderPage((page) => Math.min(page, Math.max(1, Math.ceil(filteredOrders.length / orderPageSize))));
+  }, [filteredOrders.length, orderPageSize]);
+
+  useEffect(() => {
+    setCustomerPage((page) => Math.min(page, Math.max(1, Math.ceil(filteredCustomers.length / customerPageSize))));
+  }, [filteredCustomers.length, customerPageSize]);
+
+  useEffect(() => {
+    setPaymentPage((page) => Math.min(page, Math.max(1, Math.ceil(filteredPayments.length / paymentPageSize))));
+  }, [filteredPayments.length, paymentPageSize]);
+
+  useEffect(() => {
+    setActivityPage((page) => Math.min(page, Math.max(1, Math.ceil(filteredActivityLogs.length / activityPageSize))));
+  }, [filteredActivityLogs.length, activityPageSize]);
 
   const productFileRef = useRef<HTMLInputElement>(null);
   const bannerFileRef = useRef<HTMLInputElement>(null);
@@ -2209,10 +2446,12 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
     { id: "customers", label: "Customers", icon: Users },
     { id: "payments", label: "Payments", icon: CreditCard },
     { id: "content", label: "Content", icon: FileText },
+    ...(isSuperAdmin ? [{ id: "activityLogs" as AdminTab, label: "User Activity Logs", icon: Activity }] : []),
   ];
 
   const updateOrderStatus = (orderId: string, status: Order["status"]) => {
     setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status } : o));
+    setSelectedOrder((prev) => prev?.id === orderId ? { ...prev, status } : prev);
   };
 
   const deleteProduct = (id: number) => {
@@ -2220,29 +2459,46 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
   };
 
   return (
-    <div className="flex min-h-screen">
+    <div className="admin-shell flex min-h-screen">
       {/* Sidebar */}
-      <div className="w-60 bg-sidebar border-r border-sidebar-border shrink-0 sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto">
-        <div className="p-4 border-b border-sidebar-border">
-          <p className="text-xs font-mono uppercase tracking-wider text-muted-foreground">Admin Panel</p>
-          <p className="text-sm font-bold text-foreground mt-1">Tempus Control</p>
+      <div className={`${sidebarCollapsed ? "w-[68px]" : "w-60"} bg-sidebar border-r border-sidebar-border shrink-0 sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto transition-[width] duration-300 ease-out`}>
+        <div className={`border-b border-sidebar-border ${sidebarCollapsed ? "p-3" : "p-4"}`}>
+          <div className={`flex items-center ${sidebarCollapsed ? "justify-center" : "justify-between gap-3"}`}>
+            {!sidebarCollapsed && (
+              <div className="min-w-0">
+                <p className="text-xs font-mono uppercase tracking-wider text-muted-foreground truncate">{isSuperAdmin ? "Super Admin Panel" : "Admin Panel"}</p>
+                <p className="text-sm font-bold text-foreground mt-1 truncate">Tempus Control</p>
+              </div>
+            )}
+            <button
+              onClick={() => setSidebarCollapsed((collapsed) => !collapsed)}
+              className="w-9 h-9 shrink-0 rounded-[7px] border border-sidebar-border flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-sidebar-accent hover:border-primary/40 transition-all"
+              aria-label={sidebarCollapsed ? "Expand admin sidebar" : "Collapse admin sidebar"}
+              title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {sidebarCollapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
         <nav className="p-2">
           {tabs.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               onClick={() => setActiveTab(id)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm transition-all mb-1 ${activeTab === id ? "bg-primary/10 text-primary font-medium" : "text-sidebar-foreground hover:bg-sidebar-accent"}`}
+              className={`relative w-full flex items-center ${sidebarCollapsed ? "justify-center px-2" : "gap-3 px-3"} py-2.5 rounded-[7px] text-sm transition-all mb-1 ${activeTab === id ? "bg-primary/10 text-primary font-medium" : "text-sidebar-foreground hover:bg-sidebar-accent"}`}
+              aria-label={label}
+              title={sidebarCollapsed ? label : undefined}
             >
               <Icon className="w-4 h-4" />
-              {label}
+              {!sidebarCollapsed && <span className="truncate">{label}</span>}
+              {sidebarCollapsed && activeTab === id && <span className="absolute left-0 w-0.5 h-5 rounded-full bg-primary" />}
             </button>
           ))}
         </nav>
       </div>
 
       {/* Content */}
-      <div className="flex-1 p-6 overflow-y-auto">
+      <div className="flex-1 min-w-0 p-6 overflow-y-auto">
         {activeTab === "overview" && (
           <div>
             <h1 className="text-2xl font-bold mb-6">Dashboard Overview</h1>
@@ -2310,10 +2566,10 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
               </div>
             </div>
 
-            <div className="bg-card border border-border rounded-sm p-5">
+            <div className="admin-table-frame bg-card border border-border p-5 overflow-hidden">
               <h3 className="font-bold mb-4">Recent Orders</h3>
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="admin-table w-full text-sm">
                   <thead>
                     <tr className="border-b border-border">
                       {["Order ID", "Customer", "Items", "Total", "Status", "Date"].map((h) => (
@@ -2349,9 +2605,9 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
                 <Plus className="w-4 h-4" /> Add Product
               </button>
             </div>
-            <div className="bg-card border border-border rounded-sm overflow-hidden">
+            <div className="admin-table-frame bg-card border border-border overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="admin-table w-full text-sm">
                   <thead>
                     <tr className="border-b border-border bg-muted/30">
                       {["Product", "Category", "Brand", "Price", "Stock", "Rating", "Actions"].map((h) => (
@@ -2360,7 +2616,7 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
                     </tr>
                   </thead>
                   <tbody>
-                    {products.map((p) => (
+                    {paginatedProducts.map((p) => (
                       <tr key={p.id} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-3">
@@ -2402,6 +2658,7 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
                   </tbody>
                 </table>
               </div>
+              <PaginationControls page={productPage} pageSize={productPageSize} totalItems={products.length} onPageChange={setProductPage} onPageSizeChange={setProductPageSize} />
             </div>
 
             {/* Product Add / Edit Modal */}
@@ -2555,35 +2812,81 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
         {activeTab === "orders" && (
           <div>
             <div className="flex items-center justify-between mb-6">
-              <h1 className="text-2xl font-bold">Orders</h1>
-              <div className="relative">
+              <div>
+                <p className="text-xs font-mono uppercase tracking-[0.2em] text-primary mb-2">Commerce Operations</p>
+                <h1 className="text-2xl font-bold">Orders Management</h1>
+                <p className="text-sm text-muted-foreground mt-1">Track payments, fulfilment, and customer orders from one place.</p>
+              </div>
+              <div onMouseDown={(event) => event.stopPropagation()} className="relative">
                 <button onClick={() => setExportDropdownOpen(v => !v)} className="flex items-center gap-2 px-4 py-2.5 border border-border text-sm font-medium rounded-sm hover:border-primary hover:text-primary transition-all">
                   <Download className="w-4 h-4" /> Export Report <ChevronDown className="w-3.5 h-3.5 ml-1" />
                 </button>
                 {exportDropdownOpen && (
                   <div className="absolute right-0 top-full mt-1.5 w-44 bg-card border border-border rounded-sm shadow-xl z-20">
-                    <button onClick={() => setExportDropdownOpen(false)} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm hover:bg-muted transition-colors text-left">
+                    <button onClick={() => { window.print(); setExportDropdownOpen(false); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm hover:bg-muted transition-colors text-left">
                       <FileText className="w-3.5 h-3.5 text-status-error" /> Export as PDF
                     </button>
-                    <button onClick={() => setExportDropdownOpen(false)} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm hover:bg-muted transition-colors text-left border-t border-border">
+                    <button onClick={() => { downloadTableFile("tempus-orders.xls", ["Order ID", "Customer", "Email", "Product", "Order Date", "Total Amount", "Payment Status", "Order Status", "Payment Method"], filteredOrders.map((order) => [order.id, order.customer, order.email, order.items.map((item) => item.name).join(", "), order.date, order.total, order.paymentStatus, order.status, order.paymentMethod]), "excel"); setExportDropdownOpen(false); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm hover:bg-muted transition-colors text-left border-t border-border">
                       <FileText className="w-3.5 h-3.5 text-status-success" /> Export as Excel
                     </button>
                   </div>
                 )}
               </div>
             </div>
-            <div className="bg-card border border-border rounded-sm overflow-hidden">
+
+            <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+              {[
+                { label: "Total Orders", value: orders.length, note: "All recorded orders", icon: ShoppingBag, color: "text-primary bg-primary/10" },
+                { label: "Pending Orders", value: pendingOrders, note: "Awaiting action", icon: Clock, color: "text-status-warning bg-status-warning-bg" },
+                { label: "Completed Orders", value: completedOrders, note: "Successfully delivered", icon: CheckCircle, color: "text-status-success bg-status-success-bg" },
+                { label: "Cancelled Orders", value: cancelledOrders, note: "Cancelled or refunded", icon: XCircle, color: "text-status-error bg-status-error-bg" },
+              ].map(({ label, value, note, icon: Icon, color }) => (
+                <div key={label} className="admin-score-card bg-card border border-border p-5 flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">{label}</p>
+                    <p className="text-2xl font-bold font-mono">{value}</p>
+                    <p className="text-[11px] text-muted-foreground mt-1">{note}</p>
+                  </div>
+                  <div className={`w-10 h-10 rounded-sm flex items-center justify-center shrink-0 ${color}`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="admin-filter-grid grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[minmax(220px,1fr)_165px_165px_155px_155px] gap-3 mb-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input
+                  value={orderSearch}
+                  onChange={(event) => { setOrderSearch(event.target.value); setOrderPage(1); }}
+                  placeholder="Search order, customer or product"
+                  className="w-full pl-9 pr-3 py-2.5 bg-card border border-border rounded-sm text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+              <select value={orderStatus} onChange={(event) => { setOrderStatus(event.target.value); setOrderPage(1); }} className="px-3 py-2.5 bg-card border border-border rounded-sm text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+                <option value="All">All statuses</option>
+                {["Pending", "Processing", "Shipped", "Delivered", "Cancelled"].map((status) => <option key={status} value={status}>{status}</option>)}
+              </select>
+              <select value={orderPaymentStatus} onChange={(event) => { setOrderPaymentStatus(event.target.value); setOrderPage(1); }} className="px-3 py-2.5 bg-card border border-border rounded-sm text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+                <option value="All">All payments</option>
+                {["Paid", "Pending", "Failed", "Refunded"].map((status) => <option key={status} value={status}>{status}</option>)}
+              </select>
+              <input aria-label="Orders from date" type="date" value={orderDateFrom} onChange={(event) => { setOrderDateFrom(event.target.value); setOrderPage(1); }} className="px-3 py-2.5 bg-card border border-border rounded-sm text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+              <input aria-label="Orders to date" type="date" value={orderDateTo} onChange={(event) => { setOrderDateTo(event.target.value); setOrderPage(1); }} className="px-3 py-2.5 bg-card border border-border rounded-sm text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+            </div>
+            <div className="admin-table-frame bg-card border border-border overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="admin-table w-full min-w-[1450px] text-sm">
                   <thead>
                     <tr className="border-b border-border bg-muted/30">
-                      {["Order ID", "Customer", "Items", "Total", "Status", "Date", "Actions"].map((h) => (
+                      {["Order ID", "Customer", "Product", "Order Date", "Total Amount", "Payment Status", "Order Status", "Payment Method", "Actions"].map((h) => (
                         <th key={h} className="text-left py-3 px-4 text-xs font-mono uppercase tracking-wider text-muted-foreground">{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {orders.map((o) => (
+                    {paginatedOrders.map((o) => (
                       <tr key={o.id} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
                         <td className="py-3 px-4 font-mono text-primary text-xs">{o.id}</td>
                         <td className="py-3 px-4">
@@ -2592,40 +2895,173 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
                             <p className="text-xs text-muted-foreground">{o.email}</p>
                           </div>
                         </td>
-                        <td className="py-3 px-4 text-muted-foreground text-xs">{o.items.map((i) => i.name).join(", ")}</td>
+                        <td className="py-3 px-4">
+                          <p className="text-xs font-medium">{o.items[0].name}</p>
+                          <p className="text-[11px] text-muted-foreground">{o.items.reduce((sum, item) => sum + item.qty, 0)} item{o.items.reduce((sum, item) => sum + item.qty, 0) === 1 ? "" : "s"}{o.items.length > 1 ? ` · +${o.items.length - 1} product` : ""}</p>
+                        </td>
+                        <td className="py-3 px-4 text-muted-foreground text-xs font-mono">{o.date}</td>
                         <td className="py-3 px-4 font-mono font-bold text-primary">₦{o.total.toLocaleString()}</td>
+                        <td className="py-3 px-4">
+                          <span className={`inline-flex text-xs px-2.5 py-1 rounded-full font-mono ${
+                            o.paymentStatus === "Paid" ? "text-status-success bg-status-success-bg" :
+                            o.paymentStatus === "Pending" ? "text-status-warning bg-status-warning-bg" :
+                            o.paymentStatus === "Refunded" ? "text-status-info bg-status-info-bg" :
+                            "text-status-error bg-status-error-bg"
+                          }`}>{o.paymentStatus}</span>
+                        </td>
                         <td className="py-3 px-4">
                           <select
                             value={o.status}
                             onChange={(e) => updateOrderStatus(o.id, e.target.value as Order["status"])}
-                            className={`text-xs font-mono px-2 py-1 rounded-full border-0 focus:outline-none cursor-pointer ${statusColors[o.status]}`}
+                            className={`admin-status-select text-xs font-mono px-2.5 py-1.5 rounded-full border-0 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer ${statusColors[o.status]}`}
                           >
                             {["Pending", "Processing", "Shipped", "Delivered", "Cancelled"].map((s) => (
                               <option key={s} value={s}>{s}</option>
                             ))}
                           </select>
                         </td>
-                        <td className="py-3 px-4 text-muted-foreground text-xs font-mono">{o.date}</td>
                         <td className="py-3 px-4">
-                          <div className="flex gap-1">
-                            <button className="p-1.5 hover:bg-muted rounded-sm text-muted-foreground hover:text-primary transition-all" title="View Details"><Eye className="w-3.5 h-3.5" /></button>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <CreditCard className="w-3.5 h-3.5" />
+                            {o.paymentMethod}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div onMouseDown={(event) => event.stopPropagation()} className="relative flex gap-1">
+                            <button onClick={() => setSelectedOrder(o)} className="p-2 hover:bg-muted rounded-sm text-muted-foreground hover:text-primary transition-all" title="View order details"><Eye className="w-4 h-4" /></button>
+                            <button onClick={(event) => { event.stopPropagation(); setOpenDropdownId(openDropdownId === o.id ? null : o.id); }} className="p-2 hover:bg-muted rounded-sm text-muted-foreground hover:text-primary transition-all" title="Manage order"><MoreHorizontal className="w-4 h-4" /></button>
+                            {openDropdownId === o.id && (
+                              <div onClick={(event) => event.stopPropagation()} className="absolute right-0 top-full mt-1 w-44 bg-card border border-border rounded-sm shadow-xl z-30 py-1">
+                                <button onClick={() => { setSelectedOrder(o); setOpenDropdownId(null); }} className="w-full text-left px-3 py-2 text-xs hover:bg-muted flex items-center gap-2"><Eye className="w-3.5 h-3.5" /> View details</button>
+                                <button onClick={() => { updateOrderStatus(o.id, "Processing"); setOpenDropdownId(null); }} className="w-full text-left px-3 py-2 text-xs hover:bg-muted flex items-center gap-2"><RefreshCw className="w-3.5 h-3.5" /> Mark processing</button>
+                                <button onClick={() => { updateOrderStatus(o.id, "Cancelled"); setOpenDropdownId(null); }} className="w-full text-left px-3 py-2 text-xs hover:bg-muted text-destructive flex items-center gap-2"><XCircle className="w-3.5 h-3.5" /> Cancel order</button>
+                              </div>
+                            )}
                           </div>
                         </td>
                       </tr>
                     ))}
+                    {paginatedOrders.length === 0 && (
+                      <tr><td colSpan={9} className="py-12 text-center text-sm text-muted-foreground">No orders match these filters.</td></tr>
+                    )}
                   </tbody>
                 </table>
               </div>
+              <PaginationControls page={orderPage} pageSize={orderPageSize} totalItems={filteredOrders.length} onPageChange={setOrderPage} onPageSizeChange={setOrderPageSize} />
             </div>
+
+            {selectedOrder && (
+              <div onClick={() => setSelectedOrder(null)} className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                <div onClick={(event) => event.stopPropagation()} className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-card border border-border rounded-sm shadow-2xl">
+                  <div className="flex items-start justify-between gap-4 p-6 border-b border-border">
+                    <div>
+                      <p className="text-xs font-mono uppercase tracking-[0.2em] text-primary mb-2">Order Details</p>
+                      <h2 className="text-2xl font-bold">{selectedOrder.id}</h2>
+                      <p className="text-sm text-muted-foreground mt-1">Placed on {selectedOrder.date}</p>
+                    </div>
+                    <button onClick={() => setSelectedOrder(null)} className="p-2 rounded-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" aria-label="Close order details">
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  <div className="p-6 space-y-6">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div className="p-3 bg-muted/40 border border-border rounded-sm">
+                        <p className="text-[10px] font-mono uppercase text-muted-foreground mb-1">Order status</p>
+                        <p className="text-sm font-semibold">{selectedOrder.status}</p>
+                      </div>
+                      <div className="p-3 bg-muted/40 border border-border rounded-sm">
+                        <p className="text-[10px] font-mono uppercase text-muted-foreground mb-1">Payment</p>
+                        <p className="text-sm font-semibold">{selectedOrder.paymentStatus}</p>
+                      </div>
+                      <div className="p-3 bg-muted/40 border border-border rounded-sm">
+                        <p className="text-[10px] font-mono uppercase text-muted-foreground mb-1">Method</p>
+                        <p className="text-sm font-semibold">{selectedOrder.paymentMethod}</p>
+                      </div>
+                      <div className="p-3 bg-primary/10 border border-primary/20 rounded-sm">
+                        <p className="text-[10px] font-mono uppercase text-primary mb-1">Order total</p>
+                        <p className="text-sm font-bold font-mono text-primary">₦{selectedOrder.total.toLocaleString()}</p>
+                      </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div>
+                        <h3 className="text-sm font-bold mb-3">Customer</h3>
+                        <div className="p-4 border border-border rounded-sm bg-background">
+                          <p className="font-medium">{selectedOrder.customer}</p>
+                          <p className="text-sm text-muted-foreground mt-1">{selectedOrder.email}</p>
+                        </div>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold mb-3">Delivery Address</h3>
+                        <div className="p-4 border border-border rounded-sm bg-background flex gap-3">
+                          <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                          <p className="text-sm text-muted-foreground leading-relaxed">{selectedOrder.address}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-sm font-bold mb-3">Products</h3>
+                      <div className="border border-border rounded-sm overflow-hidden">
+                        {selectedOrder.items.map((item) => {
+                          const product = products.find((entry) => entry.name === item.name);
+                          return (
+                            <div key={item.name} className="flex items-center gap-4 p-4 border-b border-border last:border-b-0">
+                              <img src={product?.image} alt={item.name} className="w-12 h-12 object-cover rounded-sm bg-secondary" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium">{item.name}</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">Quantity: {item.qty}</p>
+                              </div>
+                              <p className="text-sm font-bold font-mono">₦{(item.price * item.qty).toLocaleString()}</p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row sm:items-end gap-3 pt-2">
+                      <div className="flex-1">
+                        <label className="text-xs font-mono uppercase tracking-wider text-muted-foreground mb-1.5 block">Update order status</label>
+                        <select value={selectedOrder.status} onChange={(event) => updateOrderStatus(selectedOrder.id, event.target.value as Order["status"])} className="w-full px-3 py-2.5 bg-input-background border border-border rounded-sm text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+                          {["Pending", "Processing", "Shipped", "Delivered", "Cancelled"].map((status) => <option key={status} value={status}>{status}</option>)}
+                        </select>
+                      </div>
+                      <button onClick={() => setSelectedOrder(null)} className="px-5 py-2.5 bg-primary text-primary-foreground rounded-sm text-sm font-semibold hover:bg-primary/90 transition-colors">
+                        Save & Close
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
         {activeTab === "customers" && (
           <div>
             <h1 className="text-2xl font-bold mb-6">Customers</h1>
-            <div className="bg-card border border-border rounded-sm overflow-hidden">
+            <div className="admin-filter-grid grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[minmax(220px,1fr)_180px_170px_170px] gap-3 mb-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input
+                  value={customerSearch}
+                  onChange={(event) => { setCustomerSearch(event.target.value); setCustomerPage(1); }}
+                  placeholder="Search customer name or email"
+                  className="w-full pl-9 pr-3 py-2.5 bg-card border border-border rounded-sm text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+              <select value={customerStatus} onChange={(event) => { setCustomerStatus(event.target.value); setCustomerPage(1); }} className="px-3 py-2.5 bg-card border border-border rounded-sm text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+                <option value="All">All statuses</option>
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+              <input aria-label="Customers joined from date" type="date" value={customerDateFrom} onChange={(event) => { setCustomerDateFrom(event.target.value); setCustomerPage(1); }} className="px-3 py-2.5 bg-card border border-border rounded-sm text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+              <input aria-label="Customers joined to date" type="date" value={customerDateTo} onChange={(event) => { setCustomerDateTo(event.target.value); setCustomerPage(1); }} className="px-3 py-2.5 bg-card border border-border rounded-sm text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+            </div>
+            <div className="admin-table-frame bg-card border border-border overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="admin-table w-full text-sm">
                   <thead>
                     <tr className="border-b border-border bg-muted/30">
                       {["Customer", "Phone", "Orders", "Total Spent", "Joined", "Status", "Actions"].map((h) => (
@@ -2634,7 +3070,7 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
                     </tr>
                   </thead>
                   <tbody>
-                    {customers.map((c) => (
+                    {paginatedCustomers.map((c) => (
                       <tr key={c.id} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-3">
@@ -2665,9 +3101,13 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
                         </td>
                       </tr>
                     ))}
+                    {paginatedCustomers.length === 0 && (
+                      <tr><td colSpan={7} className="py-12 text-center text-sm text-muted-foreground">No customers match these filters.</td></tr>
+                    )}
                   </tbody>
                 </table>
               </div>
+              <PaginationControls page={customerPage} pageSize={customerPageSize} totalItems={filteredCustomers.length} onPageChange={setCustomerPage} onPageSizeChange={setCustomerPageSize} />
             </div>
           </div>
         )}
@@ -2693,9 +3133,42 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
               ))}
             </div>
             <div className="bg-card border border-border rounded-sm p-5">
-              <h3 className="font-bold mb-4">Transaction History</h3>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+                <h3 className="font-bold">Transaction History</h3>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => downloadTableFile("tempus-payment-transactions.csv", ["Order ID", "Customer", "Email", "Date", "Amount", "Status"], filteredPayments.map((order) => [order.id, order.customer, order.email, order.date, order.total, order.status]), "csv")}
+                    className="flex items-center gap-2 px-3 py-2 border border-border rounded-sm text-xs font-medium hover:text-primary hover:border-primary transition-colors"
+                  >
+                    <Download className="w-3.5 h-3.5" /> CSV
+                  </button>
+                  <button
+                    onClick={() => downloadTableFile("tempus-payment-transactions.xls", ["Order ID", "Customer", "Email", "Date", "Amount", "Status"], filteredPayments.map((order) => [order.id, order.customer, order.email, order.date, order.total, order.status]), "excel")}
+                    className="flex items-center gap-2 px-3 py-2 border border-border rounded-sm text-xs font-medium hover:text-primary hover:border-primary transition-colors"
+                  >
+                    <FileText className="w-3.5 h-3.5" /> Excel
+                  </button>
+                </div>
+              </div>
+              <div className="admin-filter-grid grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[minmax(220px,1fr)_180px_170px_170px] gap-3 mb-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <input
+                    value={paymentSearch}
+                    onChange={(event) => { setPaymentSearch(event.target.value); setPaymentPage(1); }}
+                    placeholder="Search name, email or order ID"
+                    className="w-full pl-9 pr-3 py-2.5 bg-background border border-border rounded-sm text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                </div>
+                <select value={paymentStatus} onChange={(event) => { setPaymentStatus(event.target.value); setPaymentPage(1); }} className="px-3 py-2.5 bg-background border border-border rounded-sm text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+                  <option value="All">All statuses</option>
+                  {["Pending", "Processing", "Shipped", "Delivered", "Cancelled"].map((status) => <option key={status} value={status}>{status}</option>)}
+                </select>
+                <input aria-label="Payments from date" type="date" value={paymentDateFrom} onChange={(event) => { setPaymentDateFrom(event.target.value); setPaymentPage(1); }} className="px-3 py-2.5 bg-background border border-border rounded-sm text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+                <input aria-label="Payments to date" type="date" value={paymentDateTo} onChange={(event) => { setPaymentDateTo(event.target.value); setPaymentPage(1); }} className="px-3 py-2.5 bg-background border border-border rounded-sm text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+              </div>
               <div className="space-y-3">
-                {orders.map((o) => (
+                {paginatedPayments.map((o) => (
                   <div key={o.id} className="flex items-center justify-between p-3 bg-background border border-border rounded-sm">
                     <div className="flex items-center gap-3">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center ${o.status === "Cancelled" ? "bg-status-error-bg" : "bg-status-success-bg"}`}>
@@ -2712,6 +3185,12 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
                     </div>
                   </div>
                 ))}
+                {paginatedPayments.length === 0 && (
+                  <div className="py-10 text-center text-sm text-muted-foreground">No transactions match these filters.</div>
+                )}
+              </div>
+              <div className="-mx-5 -mb-5 mt-5">
+                <PaginationControls page={paymentPage} pageSize={paymentPageSize} totalItems={filteredPayments.length} onPageChange={setPaymentPage} onPageSizeChange={setPaymentPageSize} />
               </div>
             </div>
           </div>
@@ -2975,6 +3454,102 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
             )}
           </div>
         )}
+
+        {activeTab === "activityLogs" && isSuperAdmin && (
+          <div>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-6">
+              <div>
+                <p className="text-xs font-mono uppercase tracking-[0.2em] text-primary mb-2">Super Admin Only</p>
+                <h1 className="text-2xl font-bold">User Activity Logs</h1>
+                <p className="text-sm text-muted-foreground mt-1">Review sign-in activity and session history across customer accounts.</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-2 mr-2 text-xs text-muted-foreground font-mono">
+                  <span className="w-2 h-2 rounded-full bg-status-success animate-pulse" />
+                  Live activity
+                </div>
+                <button
+                  onClick={() => downloadTableFile("tempus-user-activity-logs.csv", ["Name", "Email", "Phone", "Login Time", "Logout Time", "Duration", "Status"], filteredActivityLogs.map((log) => [log.name, log.email, log.phone, log.loginTime, log.logoutTime, log.duration, log.status]), "csv")}
+                  className="flex items-center gap-2 px-3 py-2 border border-border rounded-sm text-xs font-medium hover:text-primary hover:border-primary transition-colors"
+                >
+                  <Download className="w-3.5 h-3.5" /> Export CSV
+                </button>
+                <button
+                  onClick={() => downloadTableFile("tempus-user-activity-logs.xls", ["Name", "Email", "Phone", "Login Time", "Logout Time", "Duration", "Status"], filteredActivityLogs.map((log) => [log.name, log.email, log.phone, log.loginTime, log.logoutTime, log.duration, log.status]), "excel")}
+                  className="flex items-center gap-2 px-3 py-2 border border-border rounded-sm text-xs font-medium hover:text-primary hover:border-primary transition-colors"
+                >
+                  <FileText className="w-3.5 h-3.5" /> Export Excel
+                </button>
+              </div>
+            </div>
+
+            <div className="admin-filter-grid grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[minmax(220px,1fr)_180px_170px_170px] gap-3 mb-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input
+                  value={activitySearch}
+                  onChange={(event) => { setActivitySearch(event.target.value); setActivityPage(1); }}
+                  placeholder="Search user name or email"
+                  className="w-full pl-9 pr-3 py-2.5 bg-card border border-border rounded-sm text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+              <select value={activityStatus} onChange={(event) => { setActivityStatus(event.target.value); setActivityPage(1); }} className="px-3 py-2.5 bg-card border border-border rounded-sm text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+                <option value="All">All statuses</option>
+                <option value="Active">Active</option>
+                <option value="Logged Out">Logged Out</option>
+                <option value="Failed Login">Failed Login</option>
+              </select>
+              <input aria-label="Activity from date" type="date" value={activityDateFrom} onChange={(event) => { setActivityDateFrom(event.target.value); setActivityPage(1); }} className="px-3 py-2.5 bg-card border border-border rounded-sm text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+              <input aria-label="Activity to date" type="date" value={activityDateTo} onChange={(event) => { setActivityDateTo(event.target.value); setActivityPage(1); }} className="px-3 py-2.5 bg-card border border-border rounded-sm text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+            </div>
+
+            <div className="admin-table-frame bg-card border border-border overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="admin-table w-full min-w-[1050px] text-sm">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/30">
+                      {["Name", "Email", "Phone", "Login Time", "Logout Time", "Duration", "Status"].map((heading) => (
+                        <th key={heading} className="text-left py-3 px-4 text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                          {heading}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedActivityLogs.map((log) => {
+                      const activityStatusColors: Record<UserActivityLog["status"], string> = {
+                        "Active": "text-status-success bg-status-success-bg",
+                        "Logged Out": "text-status-info bg-status-info-bg",
+                        "Failed Login": "text-status-error bg-status-error-bg",
+                      };
+
+                      return (
+                        <tr key={log.id} className="border-b border-border/50 last:border-b-0 hover:bg-muted/20 transition-colors">
+                          <td className="py-4 px-4 font-medium">{log.name}</td>
+                          <td className="py-4 px-4 text-muted-foreground">{log.email}</td>
+                          <td className="py-4 px-4 text-muted-foreground font-mono text-xs">{log.phone}</td>
+                          <td className="py-4 px-4 font-mono text-xs">{log.loginTime}</td>
+                          <td className="py-4 px-4 font-mono text-xs text-muted-foreground">{log.logoutTime}</td>
+                          <td className="py-4 px-4 font-mono text-xs">{log.duration}</td>
+                          <td className="py-4 px-4">
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono ${activityStatusColors[log.status]}`}>
+                              <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                              {log.status}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {paginatedActivityLogs.length === 0 && (
+                      <tr><td colSpan={7} className="py-12 text-center text-sm text-muted-foreground">No activity logs match these filters.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <PaginationControls page={activityPage} pageSize={activityPageSize} totalItems={filteredActivityLogs.length} onPageChange={setActivityPage} onPageSizeChange={setActivityPageSize} />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -2984,15 +3559,22 @@ function AdminDashboard({ banners, setBanners, featuredIds, setFeaturedIds, newA
 
 function LoginPage({ onNavigate, onLogin }: {
   onNavigate: (page: Page) => void;
-  onLogin: (user: { name: string; email: string }, isAdmin?: boolean) => void;
+  onLogin: (user: { name: string; email: string }, role?: UserRole) => void;
 }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = () => {
     if (email && password) {
-      const isAdmin = email.toLowerCase().includes("admin");
-      onLogin({ name: isAdmin ? "Admin User" : "James Okafor", email }, isAdmin);
+      const normalizedEmail = email.toLowerCase();
+      const role: UserRole = normalizedEmail.includes("superadmin") || normalizedEmail.includes("super.admin")
+        ? "superAdmin"
+        : normalizedEmail.includes("admin")
+          ? "admin"
+          : "user";
+      const name = role === "superAdmin" ? "Super Admin" : role === "admin" ? "Admin User" : "James Okafor";
+      onLogin({ name, email }, role);
     }
   };
 
@@ -3014,7 +3596,24 @@ function LoginPage({ onNavigate, onLogin }: {
             </div>
             <div>
               <label className="text-xs font-mono uppercase tracking-wider text-muted-foreground mb-1.5 block">Password</label>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full px-3 py-3 bg-input-background border border-border rounded-sm text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full pl-3 pr-11 py-3 bg-input-background border border-border rounded-sm text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((visible) => !visible)}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-sm text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showPassword}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
             <div className="flex justify-end">
               <button className="text-xs text-primary hover:underline">Forgot password?</button>
@@ -3027,6 +3626,7 @@ function LoginPage({ onNavigate, onLogin }: {
             <p className="font-semibold mb-1">Demo accounts:</p>
             <p>Customer: any email + password</p>
             <p>Admin: use "admin" in email address</p>
+            <p>Super Admin: use "superadmin" in email address</p>
           </div>
           <p className="text-center text-sm text-muted-foreground mt-5">
             {"Don't have an account? "}
@@ -3289,7 +3889,7 @@ export default function App() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [wishlist, setWishlist] = useState<Product[]>([]);
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [userRole, setUserRole] = useState<UserRole>("user");
 
   const navigate = useCallback((page: Page, productId?: number) => {
     if (productId !== undefined) setSelectedProductId(productId);
@@ -3317,15 +3917,15 @@ export default function App() {
     setWishlist((prev) => prev.some((p) => p.id === product.id) ? prev.filter((p) => p.id !== product.id) : [...prev, product]);
   }, []);
 
-  const handleLogin = (u: { name: string; email: string }, admin = false) => {
+  const handleLogin = (u: { name: string; email: string }, role: UserRole = "user") => {
     setUser(u);
-    setIsAdmin(admin);
-    navigate(admin ? "admin" : "home");
+    setUserRole(role);
+    navigate(role === "user" ? "home" : "admin");
   };
 
   const handleLogout = () => {
     setUser(null);
-    setIsAdmin(false);
+    setUserRole("user");
     navigate("home");
   };
 
@@ -3348,7 +3948,7 @@ export default function App() {
           darkMode={darkMode}
           onToggleDark={() => setDarkMode(!darkMode)}
           user={user}
-          isAdmin={isAdmin}
+          isAdmin={userRole === "admin" || userRole === "superAdmin"}
           onLogout={handleLogout}
         />
 
@@ -3381,13 +3981,13 @@ export default function App() {
             <UserDashboard user={user} wishlist={wishlist} onNavigate={navigate} onToggleWishlist={toggleWishlist} />
           )}
           {currentPage === "admin" && (
-            <AdminDashboard banners={banners} setBanners={setBanners} featuredIds={featuredIds} setFeaturedIds={setFeaturedIds} newArrivalIds={newArrivalIds} setNewArrivalIds={setNewArrivalIds} products={products} setProducts={setProducts} />
+            <AdminDashboard banners={banners} setBanners={setBanners} featuredIds={featuredIds} setFeaturedIds={setFeaturedIds} newArrivalIds={newArrivalIds} setNewArrivalIds={setNewArrivalIds} products={products} setProducts={setProducts} isSuperAdmin={userRole === "superAdmin"} />
           )}
           {currentPage === "login" && (
             <LoginPage onNavigate={navigate} onLogin={handleLogin} />
           )}
           {currentPage === "register" && (
-            <RegisterPage onNavigate={navigate} onLogin={(u) => handleLogin(u, false)} />
+            <RegisterPage onNavigate={navigate} onLogin={(u) => handleLogin(u, "user")} />
           )}
           {currentPage === "about" && <AboutPage />}
           {currentPage === "contact" && <ContactPage />}
